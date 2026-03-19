@@ -1,0 +1,33 @@
+/* @import url() FONT IMPORTS MUST ALWAYS BE AT THE VERY TOP OF THIS FILE, ABOVE THE TAILWIND IMPORTS */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply font-body text-gray-700 bg-[#F0FDF4] antialiased selection:bg-mint-200 selection:text-mint-900;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading text-gray-900 tracking-tight;
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-white/70 backdrop-blur-lg border border-white/40 shadow-xl shadow-mint-900/5;
+  }
+  .glass-card {
+    @apply bg-white/60 backdrop-blur-md border border-white/50 shadow-lg shadow-mint-900/5 hover:shadow-xl hover:bg-white/80 transition-all duration-300;
+  }
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-mint-600 to-teal-500;
+  }
+  .bubble-shape {
+    border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+  }
+}
