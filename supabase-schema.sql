@@ -13,7 +13,7 @@ create table public.profiles (
   id          uuid references auth.users(id) on delete cascade primary key,
   name        text not null,
   role        text not null default 'content_manager'
-                check (role in ('super_admin','content_manager')),
+                check (role in ('super_admin','content_manager','communications')),
   avatar      text,
   created_at  timestamptz default now()
 );
@@ -76,10 +76,10 @@ create table public.about_content (
   story_p3    text default 'Today, our team of dedicated professionals serves hundreds of homes and businesses, bringing our signature sparkle to every corner we touch.',
   story_image text default 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=800',
   values      jsonb default '[
-    {"icon":"💚","title":"Care","desc":"We treat every home and office with the utmost respect, as if it were our own."},
-    {"icon":"🎯","title":"Excellence","desc":"We don''t cut corners; we clean them. Perfection is our standard."},
-    {"icon":"🛡️","title":"Trust","desc":"Reliability and honesty are the cornerstones of our client relationships."},
-    {"icon":"🤝","title":"Community","desc":"We invest in our staff and use eco-friendly products to protect our community."}
+    {"icon":"Heart","title":"Care","desc":"We treat every home and office with the utmost respect, as if it were our own."},
+    {"icon":"Target","title":"Excellence","desc":"We don''t cut corners; we clean them. Perfection is our standard."},
+    {"icon":"Shield","title":"Trust","desc":"Reliability and honesty are the cornerstones of our client relationships."},
+    {"icon":"Users","title":"Community","desc":"We invest in our staff and use eco-friendly products to protect our community."}
   ]'::jsonb,
   updated_at  timestamptz default now(),
   constraint single_row check (id = 1)
@@ -296,7 +296,7 @@ create table public.users (
   email       text not null unique,
   name        text,
   role        text not null default 'content_manager'
-                check (role in ('super_admin','content_manager')),
+                check (role in ('super_admin','content_manager','communications')),
   created_at  timestamptz default now()
 );
 
@@ -370,3 +370,29 @@ create policy "Auth can update submissions" on public.project_submissions for up
 create policy "Public can view images"    on storage.objects for select using (bucket_id = 'images');
 create policy "Auth can upload images"    on storage.objects for insert with check (bucket_id = 'images' and auth.role() = 'authenticated');
 create policy "Auth can delete images"    on storage.objects for delete using (bucket_id = 'images' and auth.role() = 'authenticated');
+
+-- ============================================================
+-- APPOINTMENTS
+-- ============================================================
+create table public.appointments (
+  id               uuid primary key default uuid_generate_v4(),
+  service_id       uuid references public.services(id) on delete set null,
+  name             text not null,
+  email            text not null,
+  phone            text default '',
+  location         text not null,
+  appointment_start timestamptz not null,
+  appointment_end   timestamptz not null,
+  status           text not null default 'pending' check (status in ('pending','completed','cancelled')),
+  created_at       timestamptz default now(),
+  user_id          uuid references auth.users(id) on delete set null
+);
+
+-- Allow anyone to insert appointments (public booking)
+alter table public.appointments enable row level security;
+create policy "Anyone can create appointment" on public.appointments for insert with check (true);
+
+-- Only authenticated users can select/update/delete (server will enforce super admin visibility)
+create policy "Auth can manage appointments" on public.appointments for select using (auth.role() = 'authenticated');
+create policy "Auth can update appointments" on public.appointments for update using (auth.role() = 'authenticated');
+create policy "Auth can delete appointments" on public.appointments for delete using (auth.role() = 'authenticated');

@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import Image from 'next/image'
+import * as Icons from 'lucide-react'
 import { SectionHeading } from '@/components/shared/SectionHeading'
 import { CTASection } from '@/components/shared/CTASection'
 import { AnimatedBubble } from '@/components/shared/AnimatedBubble'
@@ -48,14 +49,19 @@ export default function AboutClient({ about }: { about: any }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <SectionHeading subtitle="Our Values" title="What Drives Us" />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mt-12">
-            {values.map((val, i) => (
-              <motion.div key={i} initial={{ opacity:0, y:20 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }} transition={{ delay:i*0.1 }}
-                className="bg-white p-8 rounded-3xl shadow-sm hover:shadow-md transition-shadow">
-                <div className="w-16 h-16 rounded-2xl bg-mint-100 flex items-center justify-center mb-6 text-3xl">{val.icon}</div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">{val.title}</h3>
-                <p className="text-gray-600">{val.desc}</p>
-              </motion.div>
-            ))}
+            {values.map((val, i) => {
+              const IconComp = (Icons as any)[val.icon] ?? Icons.Heart
+              return (
+                <motion.div key={i} initial={{ opacity:0, y:20 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }} transition={{ delay:i*0.1 }}
+                  className="bg-white p-8 rounded-3xl shadow-sm hover:shadow-md transition-shadow">
+                  <div className="w-16 h-16 rounded-2xl bg-mint-100 flex items-center justify-center mb-6">
+                    <IconComp className="w-8 h-8 text-mint-600" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">{val.title}</h3>
+                  <p className="text-gray-600">{val.desc}</p>
+                </motion.div>
+              )
+            })}
           </div>
         </div>
       </section>

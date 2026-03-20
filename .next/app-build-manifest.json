@@ -1,14 +1,14 @@
 {
   "pages": {
-    "/(public)/news/page": [
+    "/(auth)/login/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/(public)/news/page.js"
+      "static/chunks/app/(auth)/login/page.js"
     ],
-    "/(public)/layout": [
+    "/(auth)/layout": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/(public)/layout.js"
+      "static/chunks/app/(auth)/layout.js"
     ],
     "/layout": [
       "static/chunks/webpack.js",
@@ -16,45 +16,55 @@
       "static/css/app/layout.css",
       "static/chunks/app/layout.js"
     ],
-    "/(public)/page": [
+    "/dashboard/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/(public)/page.js"
+      "static/chunks/app/dashboard/page.js"
     ],
-    "/(public)/about/page": [
+    "/dashboard/layout": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/(public)/about/page.js"
+      "static/chunks/app/dashboard/layout.js"
     ],
-    "/(public)/services/page": [
+    "/dashboard/home/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/(public)/services/page.js"
+      "static/chunks/app/dashboard/home/page.js"
     ],
-    "/(public)/projects/page": [
+    "/dashboard/users/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/(public)/projects/page.js"
+      "static/chunks/app/dashboard/users/page.js"
     ],
-    "/(public)/projects/[slug]/page": [
+    "/dashboard/news/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/(public)/projects/[slug]/page.js"
+      "static/chunks/app/dashboard/news/page.js"
     ],
-    "/(public)/blog/page": [
+    "/dashboard/about/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/(public)/blog/page.js"
+      "static/chunks/app/dashboard/about/page.js"
     ],
-    "/(public)/blog/[slug]/page": [
+    "/dashboard/appointments/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/(public)/blog/[slug]/page.js"
+      "static/chunks/app/dashboard/appointments/page.js"
     ],
-    "/(public)/contact/page": [
+    "/dashboard/contact/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/(public)/contact/page.js"
+      "static/chunks/app/dashboard/contact/page.js"
+    ],
+    "/dashboard/submissions/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/dashboard/submissions/page.js"
+    ],
+    "/_not-found/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/_not-found/page.js"
     ]
   }
 }

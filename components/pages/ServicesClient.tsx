@@ -7,6 +7,11 @@ import { CheckCircle2, ArrowRight } from 'lucide-react'
 import { SectionHeading } from '@/components/shared/SectionHeading'
 import { CTASection } from '@/components/shared/CTASection'
 import { Button } from '@/components/ui/Button'
+import dynamic from 'next/dynamic'
+import { useState } from 'react'
+import Pagination from '@/components/ui/Pagination'
+
+const AppointmentModal = dynamic(() => import('@/components/ui/AppointmentModal'))
 
 const IMAGES = [
   'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&q=80&w=800',
@@ -16,6 +21,7 @@ const IMAGES = [
 ]
 
 export default function ServicesClient({ services }: { services: any[] }) {
+  const [openService, setOpenService] = useState<any | null>(null)
   return (
     <div className="overflow-hidden bg-white">
       <section className="pt-24 pb-16 bg-mint-50">
@@ -34,15 +40,15 @@ export default function ServicesClient({ services }: { services: any[] }) {
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="space-y-24">
-            {services.map((service, index) => (
+            <Pagination items={services} itemsPerPage={5} renderItem={(service: any, i: number, globalIndex: number) => (
               <motion.div key={service.id} id={service.id}
                 initial={{ opacity:0, y:30 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true, margin:'-100px' }}
-                className={`flex flex-col ${index % 2 !== 0 ? 'lg:flex-row-reverse' : 'lg:flex-row'} gap-12 items-center`}>
+                className={`flex flex-col ${globalIndex % 2 !== 0 ? 'lg:flex-row-reverse' : 'lg:flex-row'} gap-12 items-center`}>
                 <div className="w-full lg:w-1/2">
                   <div className="relative">
                     <div className="absolute inset-0 bg-mint-100 rounded-3xl translate-x-4 translate-y-4 -z-10" />
                     <div className="relative h-[400px] rounded-3xl overflow-hidden shadow-lg">
-                      <Image src={IMAGES[index % IMAGES.length]} alt={service.title} fill className="object-cover" />
+                      <Image src={IMAGES[globalIndex % IMAGES.length]} alt={service.title} fill className="object-cover" />
                     </div>
                   </div>
                 </div>
@@ -52,19 +58,22 @@ export default function ServicesClient({ services }: { services: any[] }) {
                   <p className="text-lg text-gray-600 mb-8">{service.description}</p>
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">What's Included:</h3>
                   <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-                    {(service.features as string[]).map((f, i) => (
-                      <li key={i} className="flex items-start text-gray-700">
+                    {(service.features as string[]).map((f, j) => (
+                      <li key={j} className="flex items-start text-gray-700">
                         <CheckCircle2 className="w-5 h-5 text-mint-500 mr-2 shrink-0 mt-0.5" /><span>{f}</span>
                       </li>
                     ))}
                   </ul>
-                  <Link href="/contact"><Button icon={<ArrowRight className="w-4 h-4" />}>Book This Service</Button></Link>
+                  <Button onClick={() => setOpenService(service)} icon={<ArrowRight className="w-4 h-4" />}>Book This Service</Button>
                 </div>
               </motion.div>
-            ))}
+            )} />
           </div>
         </div>
       </section>
+      {openService && (
+        <AppointmentModal service={openService} open={!!openService} onClose={() => setOpenService(null)} />
+      )}
 
       <section className="py-24 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

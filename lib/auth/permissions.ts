@@ -62,6 +62,8 @@ export async function checkPermission(requiredPermission: Permission): Promise<{
       'edit_news',
       'view_contact_submissions',
       'view_project_submissions',
+      'view_appointments',
+      'reply_messages',
       'manage_settings',
     ],
     content_manager: [
@@ -71,6 +73,11 @@ export async function checkPermission(requiredPermission: Permission): Promise<{
       'edit_projects',
       'edit_blog',
       'edit_news',
+    ],
+    communications: [
+      'view_contact_submissions',
+      'view_appointments',
+      'reply_messages',
     ],
   }
 

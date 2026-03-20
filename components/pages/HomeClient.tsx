@@ -37,13 +37,6 @@ export default function HomeClient({ home, services, blogPosts }: Props) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <motion.div initial={{ opacity:0, x:-30 }} animate={{ opacity:1, x:0 }} transition={{ duration:0.6 }} className="max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 backdrop-blur-sm border border-mint-100 text-mint-700 font-medium text-sm mb-6 shadow-sm">
-                <span className="relative flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-mint-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-mint-500" />
-                </span>
-                {home?.badge ?? 'Premium Cleaning Services'}
-              </div>
               <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 leading-tight mb-6">
                 {home?.hero_title ?? 'Fresh, Clean &'} <br />
                 <span className="text-gradient">{home?.hero_gradient ?? 'Perfectly Yours.'}</span>
@@ -54,17 +47,6 @@ export default function HomeClient({ home, services, blogPosts }: Props) {
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link href="/contact"><Button size="lg" icon={<ArrowRight className="w-5 h-5" />}>{home?.hero_cta ?? 'Book a Cleaning'}</Button></Link>
                 <Link href="/services"><Button variant="outline" size="lg">View Services</Button></Link>
-              </div>
-              <div className="mt-10 flex items-center gap-6">
-                <div className="flex -space-x-3">
-                  {[1,2,3,4].map((i) => (
-                    <Image key={i} src={`https://i.pravatar.cc/100?img=${i+10}`} alt="Customer" width={40} height={40} className="w-10 h-10 rounded-full border-2 border-white" />
-                  ))}
-                </div>
-                <div className="text-sm">
-                  <div className="flex text-amber-400">{[1,2,3,4,5].map((i) => <Star key={i} className="w-4 h-4 fill-current" />)}</div>
-                  <span className="font-medium text-gray-700">4.9/5</span> from 500+ reviews
-                </div>
               </div>
             </motion.div>
 

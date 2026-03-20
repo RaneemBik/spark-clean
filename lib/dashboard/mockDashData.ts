@@ -8,7 +8,9 @@ export type Permission =
   | 'edit_projects'
   | 'edit_blog'
   | 'edit_news'
+  | 'reply_messages'
   | 'view_contact_submissions'
+  | 'view_appointments'
   | 'view_project_submissions'
   | 'manage_settings'
 
@@ -29,7 +31,7 @@ export const ROLES: Role[] = [
     permissions: [
       'manage_users','edit_home','edit_about','edit_services',
       'edit_projects','edit_blog','edit_news',
-      'view_contact_submissions','view_project_submissions','manage_settings',
+      'view_contact_submissions','view_project_submissions','view_appointments','manage_settings',
     ],
   },
   {
@@ -40,6 +42,17 @@ export const ROLES: Role[] = [
     permissions: [
       'edit_home','edit_about','edit_services',
       'edit_projects','edit_blog','edit_news',
+    ],
+  },
+  {
+    id: 'communications',
+    name: 'communications',
+    label: 'Communications',
+    color: 'bg-amber-100 text-amber-700',
+    permissions: [
+      'view_contact_submissions',
+      'view_appointments',
+      'reply_messages',
     ],
   },
 ]

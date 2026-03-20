@@ -32,6 +32,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
     profileRow = profile
   }
 
+  // If there's no profile/mirror row, try to use role from Supabase auth user metadata
+  const metadataRole = (user.user_metadata as any)?.role ?? null
+  if (!profileRow && metadataRole) {
+    profileRow = { name: user.email?.split('@')[0] ?? 'Admin', role: metadataRole }
+  }
+
   console.log('📋 DashboardLayout: User/profile row:', profileRow?.name || 'NO PROFILE')
 
   const authUser = {

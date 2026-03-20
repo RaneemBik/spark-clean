@@ -9,7 +9,7 @@ import { AnimatedBubble } from './AnimatedBubble'
 export function CTASection() {
   return (
     <section className="py-24 relative overflow-hidden">
-      <div className="absolute inset-0 bg-mint-600"></div>
+      <div className="absolute inset-0 bg-mint-500"></div>
 
       <AnimatedBubble size={300} color="bg-white/10"      className="-top-20 -left-20"  duration={8} />
       <AnimatedBubble size={200} color="bg-teal-400/20"   className="bottom-10 right-10" delay={2} duration={7} />

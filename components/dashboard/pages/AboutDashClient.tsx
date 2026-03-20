@@ -37,9 +37,6 @@ export default function AboutDashClient({ initialContent }: { initialContent: an
     })
   }
 
-  const setH = (k: string, v: string) => setHeader((f) => ({ ...f, [k]: v }))
-  const setS = (k: string, v: string) => setStory((f) => ({ ...f, [k]: v }))
-  const setVal = (i: number, k: string, v: string) => setValues((prev) => prev.map((val, idx) => idx === i ? { ...val, [k]: v } : val))
 
   return (
     <PermissionGuard permission="edit_about">

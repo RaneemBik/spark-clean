@@ -40,6 +40,7 @@ const navGroups: { title: string; items: NavItem[] }[] = [
     items: [
       { label: 'Contact Forms',  href: '/dashboard/contact',     icon: <Mail className="w-4 h-4" />,         permission: 'view_contact_submissions'  },
       { label: 'Project Leads',  href: '/dashboard/submissions', icon: <MessageSquare className="w-4 h-4" />, permission: 'view_project_submissions'   },
+      { label: 'Appointments',   href: '/dashboard/appointments', icon: <LayoutDashboard className="w-4 h-4" />, permission: 'view_appointments' },
     ],
   },
   {
@@ -59,7 +60,7 @@ export function DashboardSidebar() {
     href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(href)
 
   return (
-    <aside className="w-64 min-h-screen bg-white border-r border-gray-100 flex flex-col fixed left-0 top-0 z-40 shadow-sm">
+    <aside className="w-64 h-screen bg-white border-r border-gray-100 flex flex-col fixed left-0 top-0 z-40 shadow-sm overflow-hidden">
       {/* Logo */}
       <div className="px-5 py-5 border-b border-gray-100">
         <Link href="/" className="flex items-center gap-2.5 group">

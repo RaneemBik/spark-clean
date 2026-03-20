@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { Calendar, User, ArrowRight } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { SectionHeading } from '@/components/shared/SectionHeading'
+import Pagination from '@/components/ui/Pagination'
 
 export default function BlogClient({ posts }: { posts: any[] }) {
   const featured = posts[0]
@@ -59,28 +60,26 @@ export default function BlogClient({ posts }: { posts: any[] }) {
           {rest.length > 0 && (
             <>
               <SectionHeading title="Latest Articles" centered={false} className="mb-8" />
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {rest.map((post, i) => (
-                  <motion.div key={post.id} initial={{ opacity:0, y:20 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }} transition={{ delay:i*0.1 }}>
-                    <Link href={`/blog/${post.slug}`} className="block h-full">
-                      <Card hover className="h-full flex flex-col">
-                        <div className="h-48 relative overflow-hidden">
-                          <Image src={post.image} alt={post.title} fill className="object-cover transition-transform duration-500 hover:scale-110" />
+              <Pagination items={rest} itemsPerPage={5} renderItem={(post: any, i: number, globalIndex: number) => (
+                <motion.div key={post.id} initial={{ opacity:0, y:20 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }} transition={{ delay:(globalIndex % 5) * 0.05 }}>
+                  <Link href={`/blog/${post.slug}`} className="block h-full">
+                    <Card hover className="h-full flex flex-col">
+                      <div className="h-48 relative overflow-hidden">
+                        <Image src={post.image} alt={post.title} fill className="object-cover transition-transform duration-500 hover:scale-110" />
+                      </div>
+                      <div className="p-6 flex flex-col flex-grow">
+                        <div className="text-mint-600 font-semibold text-xs mb-2">{post.category}</div>
+                        <h3 className="text-xl font-bold text-gray-900 mb-3">{post.title}</h3>
+                        <p className="text-gray-600 mb-4 flex-grow line-clamp-2">{post.excerpt}</p>
+                        <div className="flex items-center justify-between text-sm text-gray-500 mt-auto pt-4 border-t border-gray-100">
+                          <span className="flex items-center"><Calendar className="w-4 h-4 mr-1" />{new Date(post.published_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span>
+                          <span className="text-mint-600 font-medium">Read more</span>
                         </div>
-                        <div className="p-6 flex flex-col flex-grow">
-                          <div className="text-mint-600 font-semibold text-xs mb-2">{post.category}</div>
-                          <h3 className="text-xl font-bold text-gray-900 mb-3">{post.title}</h3>
-                          <p className="text-gray-600 mb-4 flex-grow line-clamp-2">{post.excerpt}</p>
-                          <div className="flex items-center justify-between text-sm text-gray-500 mt-auto pt-4 border-t border-gray-100">
-                            <span className="flex items-center"><Calendar className="w-4 h-4 mr-1" />{new Date(post.published_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span>
-                            <span className="text-mint-600 font-medium">Read more</span>
-                          </div>
-                        </div>
-                      </Card>
-                    </Link>
-                  </motion.div>
-                ))}
-              </div>
+                      </div>
+                    </Card>
+                  </Link>
+                </motion.div>
+              )} />
             </>
           )}
         </div>

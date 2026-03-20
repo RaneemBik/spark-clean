@@ -7,12 +7,13 @@ import { Plus, Pencil, Trash2, Search, FileText } from 'lucide-react'
 import { deleteBlogPost } from '@/lib/supabase/actions'
 import { PageHeader, SectionCard, StatusBadge, ConfirmModal, EmptyState } from '@/components/dashboard/DashUI'
 import { PermissionGuard } from '@/components/dashboard/PermissionGuard'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 export default function BlogDashClient({ initialPosts }: { initialPosts: any[] }) {
-  const router = useRouter()
   const [posts, setPosts] = useState(initialPosts)
-  const [search, setSearch] = useState('')
+  const searchParams = useSearchParams()
+  const search = searchParams?.get('q') ?? ''
+  const router = useRouter()
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
@@ -49,7 +50,13 @@ export default function BlogDashClient({ initialPosts }: { initialPosts: any[] }
         <div className="p-4 border-b border-gray-50">
           <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 w-72">
             <Search className="w-4 h-4 text-gray-400" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)}
+            <input value={search} onChange={(e) => {
+                const val = e.target.value
+                const params = new URLSearchParams(window.location.search)
+                if (val) params.set('q', val)
+                else params.delete('q')
+                router.replace(window.location.pathname + (params.toString() ? `?${params.toString()}` : ''))
+              }}
               placeholder="Search posts..." className="bg-transparent text-sm text-gray-600 placeholder-gray-300 outline-none flex-1" />
           </div>
         </div>

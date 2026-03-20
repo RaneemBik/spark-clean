@@ -40,14 +40,14 @@ export default function UsersDashClient({ initialUsers }: { initialUsers: any[] 
         ? await createUser(newUser.email, newUser.name, newUser.role, newUser.password)
         : await createUser(newUser.email, newUser.name, newUser.role)
 
-      if (result.success) {
+      if (result && result.success) {
         setInviteSentMessage(newUser.password && newUser.password.length >= 8 ? 'User account created successfully!' : 'Invite email sent successfully!')
         setShowForm(false)
         setNewUser({ name: '', email: '', role: 'content_manager', password: '' })
         router.refresh()
         setTimeout(() => setInviteSentMessage(null), 3000)
       } else {
-        setInviteError(result.error ?? 'Operation failed.')
+        setInviteError(result?.error ?? 'Operation failed.')
       }
     })
   }
@@ -123,6 +123,25 @@ export default function UsersDashClient({ initialUsers }: { initialUsers: any[] 
                 </td>
                 <td className="px-5 py-4 flex items-center gap-2">
                   <StatusBadge status={u.email_confirmed_at ? 'active' : 'inactive'} />
+                  {!u.email_confirmed_at && (
+                    <button title="Confirm email" onClick={() => {
+                      startTransition(async () => {
+                        try {
+                          const res = await fetch('/api/users/confirm', {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: u.id })
+                          })
+                          const data = await res.json()
+                          if (data.success) {
+                            setUsers((prev) => prev.map((x) => x.id === u.id ? { ...x, email_confirmed_at: new Date().toISOString() } : x))
+                          } else {
+                            alert(data.error || 'Failed to confirm email')
+                          }
+                        } catch (err: any) {
+                          alert(err?.message || 'Network error')
+                        }
+                      })
+                    }} className="text-green-600 hover:text-green-700 p-2 rounded-lg text-xs">Confirm</button>
+                  )}
                   <button title="Delete user" onClick={() => {
                     if (!confirm('Delete this user? This action cannot be undone.')) return
                     startTransition(async () => {
