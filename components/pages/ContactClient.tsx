@@ -69,9 +69,6 @@ export default function ContactClient() {
                   </Card>
                 ))}
               </div>
-              <div className="h-64 bg-gray-100 rounded-3xl overflow-hidden relative">
-                <div className="absolute inset-0 flex items-center justify-center text-gray-400 font-medium">Map Placeholder</div>
-              </div>
             </motion.div>
 
             {/* Form */}
