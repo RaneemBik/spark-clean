@@ -151,7 +151,7 @@ export function DashboardTopbar() {
       </Link>
 
       {/* Notifications (only for users with inbox/manage permissions) */}
-      {(hasPermission && (hasPermission('manage_users') || hasPermission('view_contact_submissions') || hasPermission('view_appointments'))) && (
+      {(hasPermission && (hasPermission('manage_users') || hasPermission('view_contact_submissions'))) && (
         <div className="relative">
         <button onClick={() => setOpen(!open)} aria-expanded={open} className="relative w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:border-mint-200 hover:text-mint-600 transition">
           <Bell className="w-4 h-4" />

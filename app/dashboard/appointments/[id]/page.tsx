@@ -1,6 +1,7 @@
 import { requirePermission } from '@/lib/auth/permissions'
 import { createServiceClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
+import AppointmentReplyCard from '@/components/dashboard/pages/AppointmentReplyCard'
 
 type Props = { params: { id: string } }
 
@@ -20,6 +21,7 @@ export default async function AppointmentEdit({ params }: Props) {
       <h1 className="text-2xl font-bold mb-4">Edit Appointment</h1>
       <div className="p-6 bg-white rounded shadow">
         <div className="mb-2 font-semibold">{data.name} — {data.email}</div>
+        {data.phone && <div className="text-sm text-gray-700">Phone: {data.phone}</div>}
         <div className="text-sm text-gray-600">{data.location}</div>
         <div className="text-sm mt-1">{new Date(data.appointment_start).toLocaleString()} — {new Date(data.appointment_end).toLocaleString()}</div>
 
@@ -36,6 +38,15 @@ export default async function AppointmentEdit({ params }: Props) {
           </div>
         </form>
       </div>
+
+      <AppointmentReplyCard
+        appointment={{
+          id: data.id,
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+        }}
+      />
     </div>
   )
 }

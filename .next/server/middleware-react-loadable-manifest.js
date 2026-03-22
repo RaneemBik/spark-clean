@@ -1,1 +1,1 @@
-self.__REACT_LOADABLE_MANIFEST="{\"components\\\\dashboard\\\\DashUI.tsx -> @/lib/supabase/client\":{\"id\":\"components\\\\dashboard\\\\DashUI.tsx -> @/lib/supabase/client\",\"files\":[\"static/chunks/_app-pages-browser_lib_supabase_client_ts.js\"]}}"
+self.__REACT_LOADABLE_MANIFEST="{}"

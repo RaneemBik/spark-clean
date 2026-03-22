@@ -12,6 +12,11 @@ export default function ServicesDashClient({ initialServices }: { initialService
   const [saving, setSaving] = useState<string | null>(null)
   const [saved, setSaved] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 5
+
+  const totalPages = Math.ceil(services.length / itemsPerPage)
+  const paginatedServices = services.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
   const update = (id: string, key: string, value: string) =>
     setServices((prev) => prev.map((s) => s.id === id ? { ...s, [key]: value } : s))
@@ -61,7 +66,7 @@ export default function ServicesDashClient({ initialServices }: { initialService
       />
 
       <div className="space-y-4">
-        {services.map((service) => (
+        {paginatedServices.map((service) => (
           <SectionCard key={service.id}>
             <button onClick={() => toggle(service.id)}
               className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition text-left">
@@ -116,6 +121,25 @@ export default function ServicesDashClient({ initialServices }: { initialService
           </SectionCard>
         ))}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-6">
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+            <button
+              key={page}
+              onClick={() => setCurrentPage(page)}
+              className={`px-3 py-1 rounded-lg font-medium transition ${
+                currentPage === page
+                  ? 'bg-mint-600 text-white'
+                  : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              {page}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
     </PermissionGuard>
   )

@@ -17,7 +17,12 @@ export default function UsersDashClient({ initialUsers }: { initialUsers: any[] 
   const [isPending, startTransition] = useTransition()
   const [inviteError, setInviteError] = useState('')
   const [inviteSentMessage, setInviteSentMessage] = useState<string | null>(null)
-  const [newUser, setNewUser] = useState({ name: '', email: '', role: 'content_manager', password: '' })
+  const [newUser, setNewUser] = useState({ name: '', email: '', role: 'content_manager' })
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 5
+
+  const totalPages = Math.ceil(users.length / itemsPerPage)
+  const paginatedUsers = users.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
   if (!isSuperAdmin()) {
     return (
@@ -35,15 +40,13 @@ export default function UsersDashClient({ initialUsers }: { initialUsers: any[] 
     if (!newUser.name || !newUser.email) { setInviteError('Name and email are required.'); return }
     setInviteError('')
     startTransition(async () => {
-      // If password provided, create user immediately; otherwise invite
-      const result = newUser.password && newUser.password.length >= 8
-        ? await createUser(newUser.email, newUser.name, newUser.role, newUser.password)
-        : await createUser(newUser.email, newUser.name, newUser.role)
+      // Invite-only flow: create invitation and send invite email
+      const result = await createUser(newUser.email, newUser.name, newUser.role)
 
       if (result && result.success) {
-        setInviteSentMessage(newUser.password && newUser.password.length >= 8 ? 'User account created successfully!' : 'Invite email sent successfully!')
+        setInviteSentMessage('Invite email sent successfully!')
         setShowForm(false)
-        setNewUser({ name: '', email: '', role: 'content_manager', password: '' })
+        setNewUser({ name: '', email: '', role: 'content_manager' })
         router.refresh()
         setTimeout(() => setInviteSentMessage(null), 3000)
       } else {
@@ -96,7 +99,7 @@ export default function UsersDashClient({ initialUsers }: { initialUsers: any[] 
 
       <SectionCard title="All Users">
         <DashTable headers={['User', 'Role', 'Last Sign In', 'Actions']}>
-          {users.map((u) => {
+          {paginatedUsers.map((u) => {
             const profile = u.profile
             const role = profile?.role ?? 'content_manager'
             return (
@@ -160,6 +163,23 @@ export default function UsersDashClient({ initialUsers }: { initialUsers: any[] 
             )
           })}
         </DashTable>
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 p-4 border-t border-gray-50">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`px-3 py-1 rounded-lg font-medium transition ${
+                  currentPage === page
+                    ? 'bg-mint-600 text-white'
+                    : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+          </div>
+        )}
       </SectionCard>
 
       {/* Invite Modal */}
@@ -185,15 +205,12 @@ export default function UsersDashClient({ initialUsers }: { initialUsers: any[] 
                   {ROLES.map((r) => <option key={r.id} value={r.name}>{r.label}</option>)}
                 </DashSelect>
               </FormField>
-              <FormField label="Password (optional)">
-                <DashInput type="password" value={newUser.password} onChange={(e) => setNewUser((f) => ({ ...f, password: e.target.value }))} placeholder="Set a password to create user immediately" />
-              </FormField>
             </div>
-            <p className="text-xs text-gray-400 mt-3">{newUser.password && newUser.password.length >= 8 ? 'An account will be created now — the user can sign in with the provided password.' : 'An invitation email will be sent so they can set their own password.'}</p>
+            <p className="text-xs text-gray-400 mt-3">An invitation email will be sent so the user can set their own password.</p>
             <div className="flex gap-3 mt-5">
               <button onClick={() => setShowForm(false)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 transition">Cancel</button>
               <button onClick={handleInvite} disabled={isPending} className="flex-1 py-2.5 rounded-xl bg-mint-600 text-white text-sm font-semibold hover:bg-mint-700 disabled:opacity-60 transition">
-                {isPending ? 'Sending...' : (newUser.password && newUser.password.length >= 8 ? 'Create Account' : 'Send Invite')}
+                {isPending ? 'Sending...' : 'Send Invite'}
               </button>
             </div>
           </div>

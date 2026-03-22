@@ -1,6 +1,9 @@
-'use server'
+"use server"
 
 import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { randomBytes } from 'crypto'
+let nodemailer: any = null
+try { nodemailer = require('nodemailer') } catch (e) { nodemailer = null }
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { requirePermission } from '@/lib/auth/permissions'
@@ -345,7 +348,7 @@ export async function getAllAppointments() {
 
 export async function updateAppointmentStatus(id: string, status: string) {
   try {
-    await requirePermission('manage_users')
+    await requirePermission('reply_messages')
   } catch (e) {
     return { success: false, error: (e as Error).message }
   }
@@ -359,33 +362,81 @@ export async function updateAppointmentStatus(id: string, status: string) {
 async function sendEmail(to: string, subject: string, htmlBody: string, textBody?: string) {
   const key = process.env.SENDGRID_API_KEY
   const from = process.env.SENDGRID_FROM
-  if (!key || !from) {
-    throw new Error('Email provider not configured (SENDGRID_API_KEY / SENDGRID_FROM)')
+  const allowDevLogOnly = process.env.ALLOW_DEV_EMAIL_LOG === 'true'
+  const smtpHost = process.env.SMTP_HOST
+  const smtpPort = process.env.SMTP_PORT
+  const smtpUser = process.env.SMTP_USER
+  const smtpPass = process.env.SMTP_PASS
+  const smtpFrom = process.env.SMTP_FROM
+
+  // If SendGrid configured, use it
+  if (key && from) {
+    const payload = {
+      personalizations: [{ to: [{ email: to }] }],
+      from: { email: from },
+      subject,
+      content: [
+        { type: 'text/plain', value: textBody || '' },
+        { type: 'text/html', value: htmlBody || '' },
+      ],
+    }
+
+    const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
+
+    if (!res.ok) {
+      const text = await res.text()
+      throw new Error(`Failed to send email: ${res.status} ${text}`)
+    }
+    return
   }
 
-  const payload = {
-    personalizations: [{ to: [{ email: to }] }],
-    from: { email: from },
-    subject,
-    content: [
-      { type: 'text/plain', value: textBody || '' },
-      { type: 'text/html', value: htmlBody || '' },
-    ],
+  // Otherwise attempt SMTP if configured
+  if (smtpHost && smtpPort && smtpUser && smtpPass && smtpFrom) {
+    await sendViaSmtp(to, subject, htmlBody, textBody)
+    return
   }
 
-  const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${key}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
+  // Optional local-only debug mode: log email if explicitly enabled.
+  if (process.env.NODE_ENV === 'development' && allowDevLogOnly) {
+    console.warn('DEV: ALLOW_DEV_EMAIL_LOG=true, email not sent to external provider')
+    console.group && console.group('DEV EMAIL')
+    console.warn('To:', to)
+    console.warn('Subject:', subject)
+    console.warn('Text body:', textBody)
+    console.warn('HTML body:', htmlBody)
+    console.groupEnd && console.groupEnd()
+    return
+  }
+
+  // Fallback: if we reached here, something is misconfigured
+  throw new Error('No email provider configured. Set SendGrid (SENDGRID_API_KEY/SENDGRID_FROM) or SMTP (SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS/SMTP_FROM).')
+}
+
+// Fallback: send via SMTP if SendGrid not configured
+async function sendViaSmtp(to: string, subject: string, htmlBody: string, textBody?: string) {
+  if (!nodemailer) throw new Error('nodemailer not installed')
+  const smtpHost = process.env.SMTP_HOST!
+  const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10)
+  const smtpUser = process.env.SMTP_USER!
+  const smtpPass = process.env.SMTP_PASS!
+  const from = process.env.SMTP_FROM!
+
+  const transporter = nodemailer.createTransport({
+    host: smtpHost,
+    port: smtpPort,
+    secure: smtpPort === 465,
+    auth: { user: smtpUser, pass: smtpPass },
   })
 
-  if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`Failed to send email: ${res.status} ${text}`)
-  }
+  const info = await transporter.sendMail({ from, to, subject, text: textBody || '', html: htmlBody })
+  return info
 }
 
 export async function replyToContact(id: string, subject: string, message: string) {
@@ -464,6 +515,54 @@ export async function inviteUser(email: string, name: string, role: string) {
   }
 }
 
+// Create an invitation record and send a tokenized invite link
+export async function createInvitation(email: string, name: string, role: string, daysValid = 7) {
+  try {
+    await requirePermission('manage_users')
+  } catch (e) {
+    return { success: false, error: (e as Error).message }
+  }
+
+  const supabase = createServiceClient()
+  try {
+    const token = randomBytes(48).toString('hex')
+    const expiresAt = new Date(Date.now() + daysValid * 24 * 60 * 60 * 1000).toISOString()
+
+    const { error } = await supabase.from('invitations').insert({ email, name, role, token, expires_at: expiresAt })
+    if (error) return { success: false, error: error.message }
+
+    const base = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+    const link = `${base}/set-password?token=${token}`
+    const subject = 'You have been invited to SparkClean'
+    const html = `
+      <div style="font-family: Arial, sans-serif; line-height:1.4; color:#111">
+        <p>Hi ${name || ''},</p>
+        <p>You have been invited to join SparkClean as <strong>${role}</strong> for the email <strong>${email}</strong>.</p>
+        <p style="margin:20px 0">Click the button below to set your password and activate your account. This link will expire in ${daysValid} days.</p>
+        <p style="text-align:center; margin:24px 0">
+          <a href="${link}" style="background-color:#10b981;color:white;padding:12px 20px;border-radius:8px;text-decoration:none;display:inline-block">Set your password</a>
+        </p>
+        <p style="font-size:12px;color:#666">Or use this link: <a href="${link}">${link}</a></p>
+        <p>— SparkClean</p>
+      </div>
+    `
+    const text = `Set your password: ${link}`
+
+    try {
+      await sendEmail(email, subject, html, text)
+    } catch (mailErr: any) {
+      // If email sending fails, remove the just-created invite to avoid orphaned pending records.
+      await supabase.from('invitations').delete().eq('token', token)
+      throw mailErr
+    }
+    // Always return success only; do not return the token to the client UI.
+    // In dev the email contents (including link) are logged by sendEmail(), visible in server logs.
+    return { success: true }
+  } catch (err: any) {
+    return { success: false, error: err?.message ?? String(err) }
+  }
+}
+
 export async function updateUserRole(userId: string, role: string) {
   try {
     await requirePermission('manage_users')
@@ -471,9 +570,31 @@ export async function updateUserRole(userId: string, role: string) {
     return { success: false, error: (e as Error).message }
   }
   const supabase = createServiceClient()
-  const { error } = await supabase.from('profiles').update({ role }).eq('id', userId)
-  if (error) return { success: false, error: error.message }
-  return { success: true }
+  try {
+    const { error: profErr } = await supabase.from('profiles').update({ role }).eq('id', userId)
+    if (profErr) return { success: false, error: profErr.message }
+
+    // Keep the `users` mirror in sync as sign-in prefers that table
+    const { error: usersErr } = await supabase.from('users').update({ role }).eq('id', userId)
+    if (usersErr) return { success: false, error: usersErr.message }
+
+    // Also update the auth user's metadata so the role is consistent across auth responses
+    try {
+      const { data, error: updErr } = await supabase.auth.admin.updateUserById(userId, {
+        user_metadata: { role },
+      })
+      if (updErr) {
+        // Not fatal for DB mirrors, but surface the error
+        return { success: false, error: updErr.message }
+      }
+    } catch (e: any) {
+      return { success: false, error: e?.message ?? String(e) }
+    }
+
+    return { success: true }
+  } catch (err: any) {
+    return { success: false, error: err?.message ?? String(err) }
+  }
 }
 
 export async function confirmUserEmail(userId: string) {
@@ -486,8 +607,9 @@ export async function confirmUserEmail(userId: string) {
   try {
     const { data, error } = await supabase.auth.admin.updateUserById(userId, { email_confirm: true })
     if (error) return { success: false, error: error.message }
+    const updatedUser: any = data?.user
     // ensure users table mirror
-    await supabase.from('users').upsert({ id: userId, email: data?.email ?? null, name: data?.user_metadata?.name ?? null, role: data?.user_metadata?.role ?? 'content_manager' })
+    await supabase.from('users').upsert({ id: userId, email: updatedUser?.email ?? null, name: updatedUser?.user_metadata?.name ?? null, role: updatedUser?.user_metadata?.role ?? 'content_manager' })
     return { success: true }
   } catch (err: any) {
     return { success: false, error: err?.message ?? String(err) }
@@ -533,16 +655,8 @@ export async function createUser(email: string, name: string, role: string, pass
       return { success: true }
     }
 
-    // Fallback: send invite email (user will set password via invite link)
-    const { data, error } = await supabase.auth.admin.inviteUserByEmail(email, {
-      data: { name, role },
-      redirectTo: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/verify`,
-    })
-    if (error) return { success: false, error: error.message }
-    if (data?.user) {
-      await supabase.from('profiles').upsert({ id: data.user.id, name, role })
-    }
-    return { success: true }
+    // Fallback: create an invitation token and send our custom invite email
+    return await createInvitation(email, name, role)
   } catch (err: any) {
     return { success: false, error: err?.message ?? String(err) }
   }
