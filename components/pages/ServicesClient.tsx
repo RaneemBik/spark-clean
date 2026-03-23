@@ -24,7 +24,7 @@ export default function ServicesClient({ services }: { services: any[] }) {
   const [openService, setOpenService] = useState<any | null>(null)
   return (
     <div className="overflow-hidden bg-white">
-      <section className="pt-24 pb-16 bg-mint-50">
+      <section className="pt-24 pb-20 bg-mint-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }}>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6">
@@ -37,13 +37,13 @@ export default function ServicesClient({ services }: { services: any[] }) {
         </div>
       </section>
 
-      <section className="py-20">
+      <section className="py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="space-y-24">
+          <div className="space-y-28">
             <Pagination items={services} itemsPerPage={5} renderItem={(service: any, i: number, globalIndex: number) => (
               <motion.div key={service.id} id={service.id}
                 initial={{ opacity:0, y:30 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true, margin:'-100px' }}
-                className={`flex flex-col ${globalIndex % 2 !== 0 ? 'lg:flex-row-reverse' : 'lg:flex-row'} gap-12 items-center`}>
+                className={`flex flex-col ${globalIndex % 2 !== 0 ? 'lg:flex-row-reverse' : 'lg:flex-row'} gap-14 items-center`}>
                 <div className="w-full lg:w-1/2">
                   <div className="relative">
                     <div className="absolute inset-0 bg-mint-100 rounded-3xl translate-x-4 translate-y-4 -z-10" />
@@ -54,8 +54,8 @@ export default function ServicesClient({ services }: { services: any[] }) {
                 </div>
                 <div className="w-full lg:w-1/2">
                   <div className="inline-block px-4 py-1 rounded-full bg-mint-100 text-mint-700 font-semibold text-sm mb-4">{service.price_note}</div>
-                  <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">{service.title}</h2>
-                  <p className="text-lg text-gray-600 mb-8">{service.description}</p>
+                  <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-5">{service.title}</h2>
+                  <p className="text-lg text-gray-600 mb-10">{service.description}</p>
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">What's Included:</h3>
                   <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
                     {(service.features as string[]).map((f, j) => (
@@ -75,10 +75,10 @@ export default function ServicesClient({ services }: { services: any[] }) {
         <AppointmentModal service={openService} open={!!openService} onClose={() => setOpenService(null)} />
       )}
 
-      <section className="py-24 bg-gray-50">
+      <section className="py-28 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <SectionHeading subtitle="Process" title="How It Works" />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-20">
             {[
               { step:'01', title:'Request a Quote', desc:'Fill out our simple form or call us to discuss your specific cleaning needs.' },
               { step:'02', title:'Schedule Service', desc:'Choose a convenient time. We offer flexible scheduling to fit your busy life.' },

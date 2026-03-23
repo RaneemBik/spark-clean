@@ -73,7 +73,7 @@ export default function BlogDashClient({ initialPosts }: { initialPosts: any[] }
                     <p className="font-semibold text-gray-800 text-sm truncate">{post.title}</p>
                     <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-400">
                       <span>{post.category}</span>
-                      <span>-+</span>
+                      <span>&middot;</span>
                       <span>{post.author}</span>
                     </div>
                   </div>
