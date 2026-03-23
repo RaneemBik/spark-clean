@@ -50,7 +50,7 @@ export default function UsersDashClient({ initialUsers }: { initialUsers: any[] 
         router.refresh()
         setTimeout(() => setInviteSentMessage(null), 3000)
       } else {
-        setInviteError(result?.error ?? 'Operation failed.')
+        setInviteError((result as any)?.error ?? 'Operation failed.')
       }
     })
   }
@@ -152,7 +152,7 @@ export default function UsersDashClient({ initialUsers }: { initialUsers: any[] 
                       if (res.success) {
                         setUsers((prev) => prev.filter((x) => x.id !== u.id))
                       } else {
-                        alert(res.error || 'Delete failed')
+                        alert((res as any).error || 'Delete failed')
                       }
                     })
                   }} className="text-red-500 hover:text-red-600 p-2 rounded-lg">
