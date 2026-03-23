@@ -16,9 +16,14 @@ export async function getAboutContent() {
 
 // ─── Services ─────────────────────────────────────────────────────────────────
 export async function getServices() {
-  const supabase = createClient()
-  const { data } = await supabase.from('services').select('*').order('sort_order')
-  return data ?? []
+  try {
+    const supabase = createClient()
+    const { data, error } = await supabase.from('services').select('*').order('sort_order')
+    if (error) return []
+    return data ?? []
+  } catch {
+    return []
+  }
 }
 
 // ─── Projects ─────────────────────────────────────────────────────────────────

@@ -61,7 +61,7 @@ export default function BlogClient({ posts }: { posts: any[] }) {
             <>
               <SectionHeading title="Latest Articles" centered={false} className="mb-8" />
               <Pagination items={rest} itemsPerPage={5} renderItem={(post: any, i: number, globalIndex: number) => (
-                <motion.div key={post.id} initial={{ opacity:0, y:20 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }} transition={{ delay:(globalIndex % 5) * 0.05 }}>
+                <motion.div key={post.id} className="mb-8 last:mb-0" initial={{ opacity:0, y:20 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }} transition={{ delay:(globalIndex % 5) * 0.05 }}>
                   <Link href={`/blog/${post.slug}`} className="block h-full">
                     <Card hover className="h-full flex flex-col">
                       <div className="h-48 relative overflow-hidden">

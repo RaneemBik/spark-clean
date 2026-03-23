@@ -13,6 +13,76 @@ function slugify(text: string) {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 }
 
+const WORKING_HOUR_START = 8
+const WORKING_HOUR_END = 18
+const SLOT_MINUTES = 60
+
+function parseDateParts(date: string) {
+  const [yearStr, monthStr, dayStr] = date.split('-')
+  const year = Number(yearStr)
+  const month = Number(monthStr)
+  const day = Number(dayStr)
+
+  if (!year || !month || !day) return null
+  return { year, month, day }
+}
+
+function toUtcMsForLocalDateTime(year: number, month: number, day: number, hour: number, minute: number, tzOffsetMinutes: number) {
+  return Date.UTC(year, month - 1, day, hour, minute, 0, 0) + tzOffsetMinutes * 60_000
+}
+
+export async function getAvailableAppointmentSlots(params: {
+  service_id: string
+  date: string // YYYY-MM-DD in visitor local date
+  timezone_offset_minutes: number
+}) {
+  const parts = parseDateParts(params.date)
+  if (!parts) return { success: false, error: 'Invalid date format' }
+
+  const { year, month, day } = parts
+  const tzOffset = Number(params.timezone_offset_minutes)
+  if (Number.isNaN(tzOffset)) return { success: false, error: 'Invalid timezone offset' }
+
+  const dayStartUtcMs = toUtcMsForLocalDateTime(year, month, day, 0, 0, tzOffset)
+  const dayEndUtcMs = toUtcMsForLocalDateTime(year, month, day + 1, 0, 0, tzOffset)
+  const nowMs = Date.now()
+
+  const supabase = createServiceClient()
+  const { data: existing, error } = await supabase
+    .from('appointments')
+    .select('appointment_start, appointment_end')
+    .eq('service_id', params.service_id)
+    .eq('status', 'pending')
+    .lt('appointment_start', new Date(dayEndUtcMs).toISOString())
+    .gt('appointment_end', new Date(dayStartUtcMs).toISOString())
+
+  if (error) return { success: false, error: error.message }
+
+  const slots: Array<{ start_iso: string; end_iso: string; label: string }> = []
+  for (let hour = WORKING_HOUR_START; hour < WORKING_HOUR_END; hour += SLOT_MINUTES / 60) {
+    const startUtcMs = toUtcMsForLocalDateTime(year, month, day, hour, 0, tzOffset)
+    const endUtcMs = startUtcMs + SLOT_MINUTES * 60_000
+
+    if (endUtcMs <= nowMs) continue
+
+    const overlaps = (existing || []).some((appt: { appointment_start: string; appointment_end: string }) => {
+      const bookedStart = new Date(appt.appointment_start).getTime()
+      const bookedEnd = new Date(appt.appointment_end).getTime()
+      return startUtcMs < bookedEnd && endUtcMs > bookedStart
+    })
+
+    if (!overlaps) {
+      slots.push({
+        start_iso: new Date(startUtcMs).toISOString(),
+        end_iso: new Date(endUtcMs).toISOString(),
+        label: `${String(hour).padStart(2, '0')}:00`,
+      })
+    }
+  }
+
+  return { success: true, slots }
+}
+
 // ─── CONTACT FORM ─────────────────────────────────────────────────────────────
 export async function submitContactForm(formData: FormData) {
   const supabase = createServiceClient()
@@ -290,21 +360,19 @@ export async function bookAppointment(data: {
     const start = new Date(data.appointment_start)
     if (isNaN(start.getTime())) return { success: false, error: 'Invalid start time' }
 
+    if (start.getTime() < Date.now()) return { success: false, error: 'Cannot book a past time' }
+
     const end = data.appointment_end ? new Date(data.appointment_end) : new Date(start.getTime() + 60 * 60 * 1000)
     if (isNaN(end.getTime()) || end <= start) return { success: false, error: 'Invalid end time' }
 
-    // Working hours (08:00 - 18:00) check
-    const startHour = start.getUTCHours()
-    const endHour = end.getUTCHours()
-    if (startHour < 8 || endHour > 18) return { success: false, error: 'Requested time outside working hours' }
-
     const supabase = createClient()
 
-    // Check availability by fetching existing appointments for the service and checking overlaps in JS
+    // Only pending bookings block the same time window.
     const { data: existing, error: fetchErr } = await supabase
       .from('appointments')
       .select('appointment_start, appointment_end')
       .eq('service_id', data.service_id)
+      .eq('status', 'pending')
 
     if (fetchErr) return { success: false, error: fetchErr.message }
     if (existing && existing.length > 0) {

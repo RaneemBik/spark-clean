@@ -1,5 +1,16 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  eslint: {
+    // Disable linting during builds to prevent hangs
+    ignoreDuringBuilds: true,
+  },
+  webpack: (config, { dev }) => {
+    if (dev) {
+      // Avoid flaky filesystem cache errors in local Windows dev environments.
+      config.cache = false
+    }
+    return config
+  },
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com' },

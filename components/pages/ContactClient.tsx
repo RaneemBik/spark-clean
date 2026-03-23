@@ -60,7 +60,7 @@ export default function ContactClient() {
                   { icon: <Phone className="w-8 h-8 text-mint-600" />, title:'Phone', text:'70 900 000' },
                   { icon: <Mail className="w-8 h-8 text-mint-600" />, title:'Email', text:'hello@sparkclean.com' },
                   { icon: <MapPin className="w-8 h-8 text-mint-600" />, title:'Office', text:'123 Sparkle Ave, Saida, Main Street, ST 12' },
-                  { icon: <Clock className="w-8 h-8 text-mint-600" />, title:'Hours', text:'Mon-Fri: 8am - 6pm\nSat: 9am - 2pm' },
+                  { icon: <Clock className="w-8 h-8 text-mint-600" />, title:'Hours', text:'Monday till Sunday: 8am - 6pm' },
                 ].map((item) => (
                   <Card key={item.title} className="p-6 bg-mint-50 border-none">
                     {item.icon}
