@@ -5,9 +5,17 @@ require('dotenv').config({ path: '.env.local' });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const testUserEmail = process.env.TEST_USER_EMAIL;
+const testUserPassword = process.env.TEST_USER_PASSWORD;
+const testUserName = process.env.TEST_USER_NAME || 'Test Admin';
 
 if (!supabaseUrl || !serviceRoleKey) {
   console.error('❌ Missing Supabase credentials in .env.local');
+  process.exit(1);
+}
+
+if (!testUserEmail || !testUserPassword) {
+  console.error('❌ Missing TEST_USER_EMAIL or TEST_USER_PASSWORD in .env.local');
   process.exit(1);
 }
 
@@ -19,10 +27,10 @@ async function createTestUser() {
     
     // Create auth user
     const { data, error } = await supabase.auth.admin.createUser({
-      email: 'raneembikai70@gmail.com',
-      password: '12345678',
+      email: testUserEmail,
+      password: testUserPassword,
       email_confirm: true,
-      user_metadata: { name: 'Raneem Bikai', role: 'super_admin' },
+      user_metadata: { name: testUserName, role: 'super_admin' },
     });
 
     if (error) {
@@ -51,7 +59,7 @@ async function createTestUser() {
         .from('profiles')
         .insert({
           id: data.user.id,
-          name: 'Raneem Bikai',
+          name: testUserName,
           role: 'super_admin',
         });
       
@@ -60,8 +68,8 @@ async function createTestUser() {
     }
 
     console.log('\n🎉 Ready to sign in!');
-    console.log('Email: raneembikai70@gmail.com');
-    console.log('Password: 12345678');
+    console.log(`Email: ${testUserEmail}`);
+    console.log('Password: [from TEST_USER_PASSWORD]');
   } catch (error) {
     console.error('❌ Error:', error.message);
     process.exit(1);
