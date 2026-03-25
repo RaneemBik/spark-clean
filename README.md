@@ -6,7 +6,7 @@ Production-ready marketing website + role-based admin dashboard for a cleaning b
 
 - Public site pages: Home, About, Services, Projects, Blog, News, Contact
 - Admin dashboard for content management
-- Role-based access control (`super_admin`, `content_manager`, `communications`)
+- Role-based access control (based on the admin needs)
 - Contact and project-interest submission workflows
 - Appointment booking support
 - Supabase authentication and PostgreSQL backend
