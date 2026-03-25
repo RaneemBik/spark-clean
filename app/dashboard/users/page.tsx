@@ -1,10 +1,10 @@
-import { getAllUsers } from '@/lib/supabase/actions'
+import { getAllUsers, getRoleDefinitions } from '@/lib/supabase/actions'
 import UsersDashClient from '@/components/dashboard/pages/UsersDashClient'
 
 export default async function UsersDashPage() {
   try {
-    const users = await getAllUsers()
-    return <UsersDashClient initialUsers={users} />
+    const [users, roleDefs] = await Promise.all([getAllUsers(), getRoleDefinitions()])
+    return <UsersDashClient initialUsers={users} initialRoles={roleDefs.roles} permissionCatalog={roleDefs.permissions} />
   } catch (err: any) {
     // Provide a helpful server-rendered error instead of a generic 404
     console.error('UsersDashPage error:', err)

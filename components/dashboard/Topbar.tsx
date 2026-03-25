@@ -4,7 +4,6 @@ import { Bell, Search, ExternalLink, Menu } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/dashboard/authContext'
-import { ROLES } from '@/lib/dashboard/mockDashData'
 import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
@@ -37,7 +36,7 @@ export function DashboardTopbar({ onMenuToggle }: { onMenuToggle?: () => void })
     pathname === key || (key !== '/dashboard' && pathname.startsWith(key))
   )?.[1] ?? ['Dashboard']
 
-  const roleLabel = ROLES.find((r) => r.name === user?.role)?.label ?? ''
+  const roleLabel = user?.roleLabel ?? user?.role ?? ''
 
   const unreadCount = notifications.filter(n => (
     (n.type === 'appointment' && n.status === 'pending') ||

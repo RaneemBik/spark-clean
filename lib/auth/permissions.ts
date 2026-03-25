@@ -1,5 +1,20 @@
 import { createClient } from '@/lib/supabase/server'
-import { Permission } from '@/lib/dashboard/mockDashData'
+import { LEGACY_ROLE_PERMISSIONS, Permission } from '@/lib/auth/permissionCatalog'
+
+async function resolvePermissionsForRole(supabase: ReturnType<typeof createClient>, role: string): Promise<string[]> {
+  try {
+    const { data, error } = await supabase
+      .from('role_permissions')
+      .select('permission_name')
+      .eq('role_name', role)
+
+    if (!error && data && data.length > 0) {
+      return data.map((row: { permission_name: string }) => row.permission_name)
+    }
+  } catch {}
+
+  return LEGACY_ROLE_PERMISSIONS[role] ?? []
+}
 
 /**
  * Check if current user has required permission
@@ -45,43 +60,7 @@ export async function checkPermission(requiredPermission: Permission): Promise<{
 
   if (!userRole) return { allowed: false, error: 'Role not found' }
 
-  // Super admin has all permissions
-  if (userRole === 'super_admin') {
-    return { allowed: true, userId: user.id, userRole }
-  }
-
-  // Define role permissions
-  const rolePermissions: Record<string, Permission[]> = {
-    super_admin: [
-      'manage_users',
-      'edit_home',
-      'edit_about',
-      'edit_services',
-      'edit_projects',
-      'edit_blog',
-      'edit_news',
-      'view_contact_submissions',
-      'view_project_submissions',
-      'view_appointments',
-      'reply_messages',
-      'manage_settings',
-    ],
-    content_manager: [
-      'edit_home',
-      'edit_about',
-      'edit_services',
-      'edit_projects',
-      'edit_blog',
-      'edit_news',
-    ],
-    communications: [
-      'view_contact_submissions',
-      'view_appointments',
-      'reply_messages',
-    ],
-  }
-
-  const permissions = rolePermissions[userRole] || []
+  const permissions = await resolvePermissionsForRole(supabase, userRole)
   const hasPermission = permissions.includes(requiredPermission)
 
   return {
@@ -89,6 +68,41 @@ export async function checkPermission(requiredPermission: Permission): Promise<{
     userId: user.id,
     userRole,
     error: hasPermission ? undefined : `Permission denied: ${requiredPermission}`,
+  }
+}
+
+export async function getCurrentUserRoleAndPermissions(): Promise<{
+  userId?: string
+  role?: string
+  permissions: string[]
+}> {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return { permissions: [] }
+
+  let role: string | undefined
+
+  try {
+    const { data: urow } = await supabase.from('users').select('role').eq('id', user.id).single()
+    if (urow && (urow as any).role) role = (urow as any).role
+  } catch {}
+
+  if (!role) {
+    try {
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+      if (profile && (profile as any).role) role = (profile as any).role
+    } catch {}
+  }
+
+  if (!role) return { userId: user.id, permissions: [] }
+
+  return {
+    userId: user.id,
+    role,
+    permissions: await resolvePermissionsForRole(supabase, role),
   }
 }
 

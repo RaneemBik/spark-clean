@@ -7,6 +7,7 @@ try { nodemailer = require('nodemailer') } catch (e) { nodemailer = null }
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { requirePermission } from '@/lib/auth/permissions'
+import { LEGACY_ROLE_PERMISSIONS, PERMISSION_CATALOG } from '@/lib/auth/permissionCatalog'
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 function slugify(text: string) {
@@ -192,9 +193,30 @@ export async function deleteProject(id: string) {
     return { success: false, error: (e as Error).message }
   }
   const supabase = createClient()
-  const { error } = await supabase.from('projects').delete().eq('id', id)
+  const { error } = await supabase
+    .from('projects')
+    .update({ is_trashed: true, updated_at: new Date().toISOString() })
+    .eq('id', id)
   if (error) return { success: false, error: error.message }
   revalidatePath('/projects')
+  revalidatePath('/dashboard/projects')
+  return { success: true }
+}
+
+export async function restoreProject(id: string) {
+  try {
+    await requirePermission('edit_projects')
+  } catch (e) {
+    return { success: false, error: (e as Error).message }
+  }
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('projects')
+    .update({ is_trashed: false, updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) return { success: false, error: error.message }
+  revalidatePath('/projects')
+  revalidatePath('/dashboard/projects')
   return { success: true }
 }
 
@@ -235,9 +257,30 @@ export async function deleteBlogPost(id: string) {
     return { success: false, error: (e as Error).message }
   }
   const supabase = createClient()
-  const { error } = await supabase.from('blog_posts').delete().eq('id', id)
+  const { error } = await supabase
+    .from('blog_posts')
+    .update({ is_trashed: true, status: 'draft', updated_at: new Date().toISOString() })
+    .eq('id', id)
   if (error) return { success: false, error: error.message }
   revalidatePath('/blog')
+  revalidatePath('/dashboard/blog')
+  return { success: true }
+}
+
+export async function restoreBlogPost(id: string) {
+  try {
+    await requirePermission('edit_blog')
+  } catch (e) {
+    return { success: false, error: (e as Error).message }
+  }
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('blog_posts')
+    .update({ is_trashed: false, status: 'published', updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) return { success: false, error: error.message }
+  revalidatePath('/blog')
+  revalidatePath('/dashboard/blog')
   return { success: true }
 }
 
@@ -278,10 +321,117 @@ export async function deleteNewsItem(id: string) {
     return { success: false, error: (e as Error).message }
   }
   const supabase = createClient()
-  const { error } = await supabase.from('news_items').delete().eq('id', id)
+  const { error } = await supabase
+    .from('news_items')
+    .update({ is_trashed: true, status: 'draft', updated_at: new Date().toISOString() })
+    .eq('id', id)
   if (error) return { success: false, error: error.message }
   revalidatePath('/news')
+  revalidatePath('/dashboard/news')
   return { success: true }
+}
+
+export async function restoreNewsItem(id: string) {
+  try {
+    await requirePermission('edit_news')
+  } catch (e) {
+    return { success: false, error: (e as Error).message }
+  }
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('news_items')
+    .update({ is_trashed: false, status: 'published', updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) return { success: false, error: error.message }
+  revalidatePath('/news')
+  revalidatePath('/dashboard/news')
+  return { success: true }
+}
+
+export async function getRoleDefinitions() {
+  try {
+    await requirePermission('manage_users')
+  } catch {
+    return {
+      roles: Object.entries(LEGACY_ROLE_PERMISSIONS).map(([name, permissions]) => ({
+        id: name,
+        name,
+        label: name.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+        permissions,
+      })),
+      permissions: PERMISSION_CATALOG.map((p) => ({ name: p.name, label: p.label })),
+    }
+  }
+
+  const supabase = createServiceClient()
+
+  try {
+    const { data: roleRows } = await supabase.from('roles').select('id,name,label').order('name')
+    const { data: permissionRows } = await supabase.from('permissions').select('name,description').order('name')
+    const { data: rolePermissionRows } = await supabase.from('role_permissions').select('role_name,permission_name')
+
+    if (!roleRows || !permissionRows) {
+      throw new Error('roles/permissions tables unavailable')
+    }
+
+    const roles = roleRows.map((role: any) => ({
+      id: role.id,
+      name: role.name,
+      label: role.label,
+      permissions: (rolePermissionRows || [])
+        .filter((rp: any) => rp.role_name === role.name)
+        .map((rp: any) => rp.permission_name),
+    }))
+
+    const permissions = permissionRows.map((p: any) => ({ name: p.name, label: p.description || p.name }))
+
+    return { roles, permissions }
+  } catch {
+    return {
+      roles: Object.entries(LEGACY_ROLE_PERMISSIONS).map(([name, permissions]) => ({
+        id: name,
+        name,
+        label: name.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+        permissions,
+      })),
+      permissions: PERMISSION_CATALOG.map((p) => ({ name: p.name, label: p.label })),
+    }
+  }
+}
+
+export async function createRoleWithPermissions(input: {
+  name: string
+  label: string
+  permissions: string[]
+}) {
+  try {
+    await requirePermission('manage_users')
+  } catch (e) {
+    return { success: false, error: (e as Error).message }
+  }
+
+  const name = input.name.trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^_+|_+$/g, '')
+  if (!name) return { success: false, error: 'Invalid role name' }
+  if (!input.permissions?.length) return { success: false, error: 'Select at least one permission' }
+
+  const label = input.label.trim() || name.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+  const supabase = createServiceClient()
+
+  try {
+    const { error: roleErr } = await supabase.from('roles').insert({ name, label })
+    if (roleErr) return { success: false, error: roleErr.message }
+
+    const rows = input.permissions.map((permissionName) => ({
+      role_name: name,
+      permission_name: permissionName,
+    }))
+    const { error: permErr } = await supabase.from('role_permissions').insert(rows)
+    if (permErr) return { success: false, error: permErr.message }
+
+    return { success: true }
+  } catch (err: any) {
+    return { success: false, error: err?.message ?? String(err) }
+  }
 }
 
 // ─── CONTACT SUBMISSION STATUS ────────────────────────────────────────────────
@@ -328,14 +478,37 @@ export async function signIn(email: string, password: string) {
     // fallback to metadata
     if (!role) role = (data?.user?.user_metadata as any)?.role ?? (data?.session?.user?.user_metadata as any)?.role ?? null
 
+    let permissions: string[] = []
+    if (role) {
+      try {
+        const { data: rolePerms } = await supabase
+          .from('role_permissions')
+          .select('permission_name')
+          .eq('role_name', role)
+        permissions = (rolePerms || []).map((rp: any) => rp.permission_name)
+      } catch {
+        permissions = LEGACY_ROLE_PERMISSIONS[role] ?? []
+      }
+    }
+
+    let landingPath = '/dashboard'
+    if (permissions.includes('manage_users')) landingPath = '/dashboard/users'
+    else if (permissions.includes('edit_home')) landingPath = '/dashboard/home'
+    else if (permissions.includes('edit_projects')) landingPath = '/dashboard/projects'
+    else if (permissions.includes('edit_blog')) landingPath = '/dashboard/blog'
+    else if (permissions.includes('edit_news')) landingPath = '/dashboard/news'
+    else if (permissions.includes('view_contact_submissions')) landingPath = '/dashboard/contact'
+    else if (permissions.includes('view_project_submissions')) landingPath = '/dashboard/submissions'
+    else if (permissions.includes('view_appointments')) landingPath = '/dashboard/appointments'
+
     // Verify session is in cookies by checking getUser()
     const { data: getUserData } = await supabase.auth.getUser()
     console.log('🔐 SignIn: Verification - getUser() returns:', getUserData?.user?.email || 'NOT FOUND')
 
-    return { success: true, role: role ?? 'content_manager' }
+    return { success: true, role: role ?? 'content_manager', landingPath }
   } catch (err: any) {
     console.error('❌ SignIn post-check error:', err)
-    return { success: true, role: 'content_manager' }
+    return { success: true, role: 'content_manager', landingPath: '/dashboard/home' }
   }
 }
 
@@ -593,14 +766,19 @@ export async function createInvitation(email: string, name: string, role: string
 
   const supabase = createServiceClient()
   try {
+    const allowInviteLinkFallback =
+      process.env.ALLOW_INVITE_LINK_FALLBACK === 'true' || process.env.NODE_ENV === 'development'
+
     const token = randomBytes(48).toString('hex')
     const expiresAt = new Date(Date.now() + daysValid * 24 * 60 * 60 * 1000).toISOString()
 
     const { error } = await supabase.from('invitations').insert({ email, name, role, token, expires_at: expiresAt })
     if (error) return { success: false, error: error.message }
 
-    const base = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+    const baseRaw = process.env.INVITE_BASE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+    const base = baseRaw.replace(/\/$/, '')
     const link = `${base}/set-password?token=${token}`
+    const linkIsLocalhost = /localhost|127\.0\.0\.1/i.test(base)
     const subject = 'You have been invited to SparkClean'
     const html = `
       <div style="font-family: Arial, sans-serif; line-height:1.4; color:#111">
@@ -619,13 +797,25 @@ export async function createInvitation(email: string, name: string, role: string
     try {
       await sendEmail(email, subject, html, text)
     } catch (mailErr: any) {
-      // If email sending fails, remove the just-created invite to avoid orphaned pending records.
+      if (allowInviteLinkFallback) {
+        // Keep invitation so admins can manually share the link when provider quota is exhausted.
+        return {
+          success: true,
+          emailSent: false,
+          inviteLink: link,
+          inviteLinkIsLocalhost: linkIsLocalhost,
+          warning: linkIsLocalhost
+            ? `Invitation created, but email could not be sent: ${mailErr?.message ?? String(mailErr)}. The generated link uses localhost. Set INVITE_BASE_URL to your public domain before sharing.`
+            : `Invitation created, but email could not be sent: ${mailErr?.message ?? String(mailErr)}`,
+        }
+      }
+
+      // If fallback is disabled, remove invite to avoid orphaned pending records.
       await supabase.from('invitations').delete().eq('token', token)
       throw mailErr
     }
-    // Always return success only; do not return the token to the client UI.
-    // In dev the email contents (including link) are logged by sendEmail(), visible in server logs.
-    return { success: true }
+
+    return { success: true, emailSent: true }
   } catch (err: any) {
     return { success: false, error: err?.message ?? String(err) }
   }

@@ -31,14 +31,16 @@ export async function getProjects() {
   const supabase = createClient()
   const { data } = await supabase
     .from('projects').select('*')
-    .eq('published', true).order('sort_order')
+    .eq('published', true)
+    .eq('is_trashed', false)
+    .order('sort_order')
   return data ?? []
 }
 
 export async function getProjectBySlug(slug: string) {
   const supabase = createClient()
   const { data } = await supabase
-    .from('projects').select('*').eq('slug', slug).single()
+    .from('projects').select('*').eq('slug', slug).eq('published', true).eq('is_trashed', false).single()
   return data
 }
 
@@ -47,14 +49,16 @@ export async function getBlogPosts() {
   const supabase = createClient()
   const { data } = await supabase
     .from('blog_posts').select('*')
-    .eq('status', 'published').order('published_at', { ascending: false })
+    .eq('status', 'published')
+    .eq('is_trashed', false)
+    .order('published_at', { ascending: false })
   return data ?? []
 }
 
 export async function getBlogPostBySlug(slug: string) {
   const supabase = createClient()
   const { data } = await supabase
-    .from('blog_posts').select('*').eq('slug', slug).single()
+    .from('blog_posts').select('*').eq('slug', slug).eq('status', 'published').eq('is_trashed', false).single()
   return data
 }
 
@@ -63,13 +67,15 @@ export async function getNewsItems() {
   const supabase = createClient()
   const { data } = await supabase
     .from('news_items').select('*')
-    .eq('status', 'published').order('published_at', { ascending: false })
+    .eq('status', 'published')
+    .eq('is_trashed', false)
+    .order('published_at', { ascending: false })
   return data ?? []
 }
 
 export async function getNewsItemBySlug(slug: string) {
   const supabase = createClient()
   const { data } = await supabase
-    .from('news_items').select('*').eq('slug', slug).single()
+    .from('news_items').select('*').eq('slug', slug).eq('status', 'published').eq('is_trashed', false).single()
   return data
 }

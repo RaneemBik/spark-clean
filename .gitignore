@@ -8,6 +8,7 @@ out
 .env
 .env.*
 !.env.example
+.env.local
 
 # Key material
 *.pem
@@ -19,3 +20,4 @@ out
 # Supabase migrations (local-only)
 supabase-migrations/
 supabase/migrations/
+migrations/

@@ -1,18 +1,6 @@
 // ─── Permissions & Roles ─────────────────────────────────────────────────────
 
-export type Permission =
-  | 'manage_users'
-  | 'edit_home'
-  | 'edit_about'
-  | 'edit_services'
-  | 'edit_projects'
-  | 'edit_blog'
-  | 'edit_news'
-  | 'reply_messages'
-  | 'view_contact_submissions'
-  | 'view_appointments'
-  | 'view_project_submissions'
-  | 'manage_settings'
+export type Permission = string
 
 export type Role = {
   id: string

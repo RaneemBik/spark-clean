@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { AuthProvider } from '@/lib/dashboard/authContext'
 import DashboardShell from '@/components/dashboard/DashboardShell'
+import { getCurrentUserRoleAndPermissions } from '@/lib/auth/permissions'
 
 export const metadata = { title: 'SparkClean Admin' }
 
@@ -39,11 +40,22 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   console.log('📋 DashboardLayout: User/profile row:', profileRow?.name || 'NO PROFILE')
 
+  const { role, permissions } = await getCurrentUserRoleAndPermissions()
+  let roleLabel = profileRow?.role
+  if (role) {
+    try {
+      const { data: roleRow } = await supabase.from('roles').select('label').eq('name', role).single()
+      if (roleRow?.label) roleLabel = roleRow.label
+    } catch {}
+  }
+
   const authUser = {
     id:     user.id,
     name:   profileRow?.name ?? user.email?.split('@')[0] ?? 'Admin',
     email:  user.email ?? '',
-    role:   profileRow?.role ?? 'content_manager',
+    role:   role ?? profileRow?.role ?? 'content_manager',
+    roleLabel: roleLabel ?? role ?? profileRow?.role ?? 'content_manager',
+    permissions,
     avatar: (profileRow?.name ?? user.email ?? 'A').slice(0,2).toUpperCase(),
   }
 

@@ -27,13 +27,7 @@ export default function LoginClient() {
           setError(result.error || 'Invalid email or password. Please check your credentials.')
         } else {
           console.log('✅ Server sign-in success, resolving role:', result.role)
-          // Redirect depending on role
-          const role = result.role ?? 'content_manager'
-          const path = role === 'super_admin'
-            ? '/dashboard'
-            : role === 'communications'
-              ? '/dashboard/contact'
-              : '/dashboard/home'
+          const path = (result as any).landingPath || '/dashboard'
           await new Promise(resolve => setTimeout(resolve, 250))
           window.location.href = path
         }

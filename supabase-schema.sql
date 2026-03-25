@@ -12,8 +12,7 @@ create extension if not exists "uuid-ossp";
 create table public.profiles (
   id          uuid references auth.users(id) on delete cascade primary key,
   name        text not null,
-  role        text not null default 'content_manager'
-                check (role in ('super_admin','content_manager','communications')),
+  role        text not null default 'content_manager',
   avatar      text,
   created_at  timestamptz default now()
 );
@@ -139,6 +138,7 @@ create table public.projects (
   before_after_notes text not null,
   gallery            jsonb default '[]'::jsonb,
   published          boolean default true,
+  is_trashed         boolean not null default false,
   sort_order         int default 0,
   created_at         timestamptz default now(),
   updated_at         timestamptz default now()
@@ -186,7 +186,8 @@ create table public.blog_posts (
   content     text not null,
   author      text not null,
   image       text not null,
-  status      text not null default 'published' check (status in ('published','draft')),
+  status      text not null default 'published' check (status in ('published','draft','trashed')),
+  is_trashed  boolean not null default false,
   published_at timestamptz default now(),
   created_at  timestamptz default now(),
   updated_at  timestamptz default now()
@@ -220,7 +221,8 @@ create table public.news_items (
   summary     text not null,
   content     text not null,
   image       text not null,
-  status      text not null default 'published' check (status in ('published','draft')),
+  status      text not null default 'published' check (status in ('published','draft','trashed')),
+  is_trashed  boolean not null default false,
   published_at timestamptz default now(),
   created_at  timestamptz default now(),
   updated_at  timestamptz default now()
@@ -295,10 +297,75 @@ create table public.users (
   id          uuid references auth.users(id) on delete cascade primary key,
   email       text not null unique,
   name        text,
-  role        text not null default 'content_manager'
-                check (role in ('super_admin','content_manager','communications')),
+  role        text not null default 'content_manager',
   created_at  timestamptz default now()
 );
+
+-- Dynamic role model
+create table if not exists public.permissions (
+  name        text primary key,
+  description text not null,
+  created_at  timestamptz default now()
+);
+
+create table if not exists public.roles (
+  id          uuid primary key default uuid_generate_v4(),
+  name        text unique not null,
+  label       text not null,
+  created_at  timestamptz default now()
+);
+
+create table if not exists public.role_permissions (
+  role_name       text not null references public.roles(name) on delete cascade,
+  permission_name text not null references public.permissions(name) on delete cascade,
+  created_at      timestamptz default now(),
+  primary key (role_name, permission_name)
+);
+
+insert into public.permissions (name, description) values
+  ('manage_users', 'Manage users and roles'),
+  ('edit_home', 'Edit Home page'),
+  ('edit_about', 'Edit About page'),
+  ('edit_services', 'Edit Services page'),
+  ('edit_projects', 'Create/update/delete projects'),
+  ('edit_blog', 'Create/update/delete blog posts'),
+  ('edit_news', 'Create/update/delete news items'),
+  ('reply_messages', 'Reply to contact and appointment messages'),
+  ('view_contact_submissions', 'View contact submissions'),
+  ('view_appointments', 'View appointments'),
+  ('view_project_submissions', 'View project submissions'),
+  ('manage_settings', 'Manage settings')
+on conflict (name) do nothing;
+
+insert into public.roles (name, label) values
+  ('super_admin', 'Super Admin'),
+  ('content_manager', 'Content Manager'),
+  ('communications', 'Communications')
+on conflict (name) do nothing;
+
+insert into public.role_permissions (role_name, permission_name) values
+  ('super_admin', 'manage_users'),
+  ('super_admin', 'edit_home'),
+  ('super_admin', 'edit_about'),
+  ('super_admin', 'edit_services'),
+  ('super_admin', 'edit_projects'),
+  ('super_admin', 'edit_blog'),
+  ('super_admin', 'edit_news'),
+  ('super_admin', 'view_contact_submissions'),
+  ('super_admin', 'view_project_submissions'),
+  ('super_admin', 'view_appointments'),
+  ('super_admin', 'reply_messages'),
+  ('super_admin', 'manage_settings'),
+  ('content_manager', 'edit_home'),
+  ('content_manager', 'edit_about'),
+  ('content_manager', 'edit_services'),
+  ('content_manager', 'edit_projects'),
+  ('content_manager', 'edit_blog'),
+  ('content_manager', 'edit_news'),
+  ('communications', 'view_contact_submissions'),
+  ('communications', 'view_appointments'),
+  ('communications', 'reply_messages')
+on conflict do nothing;
 
 -- Auto-create users row on auth user signup
 create or replace function public.handle_new_user_to_users()
@@ -341,18 +408,29 @@ create policy "Auth can manage services"  on public.services for all using (auth
 
 -- Projects: public read published, authenticated full
 alter table public.projects enable row level security;
-create policy "Public can read projects"  on public.projects for select using (published = true);
+create policy "Public can read projects"  on public.projects for select using (published = true and is_trashed = false);
 create policy "Auth can manage projects"  on public.projects for all using (auth.role() = 'authenticated');
 
 -- Blog posts: public read published, authenticated full
 alter table public.blog_posts enable row level security;
-create policy "Public can read blogs"     on public.blog_posts for select using (status = 'published');
+create policy "Public can read blogs"     on public.blog_posts for select using (status = 'published' and is_trashed = false);
 create policy "Auth can manage blogs"     on public.blog_posts for all using (auth.role() = 'authenticated');
 
 -- News items: public read published, authenticated full
 alter table public.news_items enable row level security;
-create policy "Public can read news"      on public.news_items for select using (status = 'published');
+create policy "Public can read news"      on public.news_items for select using (status = 'published' and is_trashed = false);
 create policy "Auth can manage news"      on public.news_items for all using (auth.role() = 'authenticated');
+
+alter table public.permissions enable row level security;
+create policy "Auth can read permissions" on public.permissions for select using (auth.role() = 'authenticated');
+
+alter table public.roles enable row level security;
+create policy "Auth can read roles" on public.roles for select using (auth.role() = 'authenticated');
+create policy "Auth can manage roles" on public.roles for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+
+alter table public.role_permissions enable row level security;
+create policy "Auth can read role permissions" on public.role_permissions for select using (auth.role() = 'authenticated');
+create policy "Auth can manage role permissions" on public.role_permissions for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 
 -- Contact submissions: anyone can insert, only auth can read
 alter table public.contact_submissions enable row level security;

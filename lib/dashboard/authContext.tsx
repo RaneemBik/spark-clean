@@ -1,7 +1,11 @@
+//this file provides a simple authentication context for the dashboard, allowing components to access the current user, check permissions, and log out. It uses React's Context API and is designed to be used with Next.js.
+//also includes a logout function that calls the signOut action from the supabase library and redirects the user to the login page.
+// The hasPermission function checks if the current user has a specific permission based on their role, and isSuperAdmin checks if the user is a super admin.
+//i will use this file in the dashboard layout to wrap the entire dashboard with the AuthProvider, ensuring that all components have access to the authentication context.
 'use client'
 
 import { createContext, useContext, useState, ReactNode } from 'react'
-import { Permission, ROLES } from '@/lib/dashboard/mockDashData'
+import { Permission } from '@/lib/auth/permissionCatalog'
 import { signOut } from '@/lib/supabase/actions'
 import { useRouter } from 'next/navigation'
 
@@ -10,6 +14,8 @@ export type AuthUser = {
   name: string
   email: string
   role: string
+  roleLabel?: string
+  permissions: string[]
   avatar: string
 }
 
@@ -39,8 +45,7 @@ export function AuthProvider({
 
   const hasPermission = (permission: Permission): boolean => {
     if (!user) return false
-    const role = ROLES.find((r) => r.name === user.role)
-    return role?.permissions.includes(permission) ?? false
+    return user.permissions.includes(permission)
   }
 
   const isSuperAdmin = () => user?.role === 'super_admin'

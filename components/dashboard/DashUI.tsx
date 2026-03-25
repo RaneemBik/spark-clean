@@ -57,6 +57,7 @@ const statusMap: Record<string, string> = {
   inactive:  'bg-gray-50 text-gray-400 border border-gray-200',
   published: 'bg-mint-50 text-mint-700 border border-mint-100',
   draft:     'bg-amber-50 text-amber-700 border border-amber-100',
+  trashed:   'bg-rose-50 text-rose-700 border border-rose-100',
 }
 export function StatusBadge({ status }: { status: string }) {
   return (
@@ -202,7 +203,7 @@ export function ImageUploadField({ value, onChange, label = 'Image' }: { value: 
 }
 
 // ─── Confirm Modal ────────────────────────────────────────────────────────────
-export function ConfirmModal({ open, title, desc, onConfirm, onCancel }: { open: boolean; title: string; desc?: string; onConfirm: () => void; onCancel: () => void }) {
+export function ConfirmModal({ open, title, desc, onConfirm, onCancel, confirmLabel = 'Delete' }: { open: boolean; title: string; desc?: string; onConfirm: () => void; onCancel: () => void; confirmLabel?: string }) {
   if (!open) return null
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
@@ -211,7 +212,7 @@ export function ConfirmModal({ open, title, desc, onConfirm, onCancel }: { open:
         {desc && <p className="text-gray-400 text-sm mb-6">{desc}</p>}
         <div className="flex gap-3">
           <button onClick={onCancel} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 transition">Cancel</button>
-          <button onClick={onConfirm} className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-sm font-medium hover:bg-red-600 transition">Delete</button>
+          <button onClick={onConfirm} className="flex-1 py-2.5 rounded-xl bg-red-500 text-white text-sm font-medium hover:bg-red-600 transition">{confirmLabel}</button>
         </div>
       </div>
     </div>

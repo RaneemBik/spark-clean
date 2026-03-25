@@ -6,8 +6,8 @@ export default async function DashboardPage() {
   const [{ count: newContacts }, { count: newLeads }, { count: totalBlogs }, { count: totalProjects }] = await Promise.all([
     supabase.from('contact_submissions').select('*', { count: 'exact', head: true }).eq('status', 'new'),
     supabase.from('project_submissions').select('*', { count: 'exact', head: true }).eq('status', 'new'),
-    supabase.from('blog_posts').select('*', { count: 'exact', head: true }),
-    supabase.from('projects').select('*', { count: 'exact', head: true }),
+    supabase.from('blog_posts').select('*', { count: 'exact', head: true }).eq('is_trashed', false),
+    supabase.from('projects').select('*', { count: 'exact', head: true }).eq('is_trashed', false),
   ])
   const { data: recentContacts } = await supabase
     .from('contact_submissions').select('*').order('created_at', { ascending: false }).limit(5)

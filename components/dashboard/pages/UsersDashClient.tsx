@@ -2,22 +2,37 @@
 
 import { useState, useTransition } from 'react'
 import { Users, Plus, X, Check, Trash2 } from 'lucide-react'
-import { inviteUser, updateUserRole, createUser, deleteUser } from '@/lib/supabase/actions'
+import { updateUserRole, createUser, deleteUser, createRoleWithPermissions } from '@/lib/supabase/actions'
 import { PageHeader, SectionCard, RoleBadge, StatusBadge, DashTable, FormField, DashInput, DashSelect } from '@/components/dashboard/DashUI'
 import { PermissionGuard } from '@/components/dashboard/PermissionGuard'
-import { ROLES } from '@/lib/dashboard/mockDashData'
 import { useAuth } from '@/lib/dashboard/authContext'
 import { useRouter } from 'next/navigation'
 
-export default function UsersDashClient({ initialUsers }: { initialUsers: any[] }) {
+type RoleRow = { id: string; name: string; label: string; permissions: string[] }
+type PermissionRow = { name: string; label: string }
+
+export default function UsersDashClient({
+  initialUsers,
+  initialRoles,
+  permissionCatalog,
+}: {
+  initialUsers: any[]
+  initialRoles: RoleRow[]
+  permissionCatalog: PermissionRow[]
+}) {
   const { isSuperAdmin } = useAuth()
   const router = useRouter()
   const [users, setUsers] = useState(initialUsers)
+  const [roles, setRoles] = useState(initialRoles)
   const [showForm, setShowForm] = useState(false)
+  const [showRoleForm, setShowRoleForm] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [inviteError, setInviteError] = useState('')
   const [inviteSentMessage, setInviteSentMessage] = useState<string | null>(null)
-  const [newUser, setNewUser] = useState({ name: '', email: '', role: 'content_manager' })
+  const [manualInviteLink, setManualInviteLink] = useState<string | null>(null)
+  const [inviteLinkLocalhostWarning, setInviteLinkLocalhostWarning] = useState<string | null>(null)
+  const [newUser, setNewUser] = useState({ name: '', email: '', role: initialRoles[0]?.name ?? 'content_manager' })
+  const [newRole, setNewRole] = useState({ name: '', label: '', permissions: [] as string[] })
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 5
 
@@ -44,13 +59,56 @@ export default function UsersDashClient({ initialUsers }: { initialUsers: any[] 
       const result = await createUser(newUser.email, newUser.name, newUser.role)
 
       if (result && result.success) {
-        setInviteSentMessage('Invite email sent successfully!')
+        if ((result as any).emailSent === false) {
+          setInviteSentMessage((result as any).warning || 'Invitation created. Email sending failed, please share invite link manually.')
+          setManualInviteLink((result as any).inviteLink || null)
+          setInviteLinkLocalhostWarning((result as any).inviteLinkIsLocalhost ? 'This link uses localhost and will only work on your machine. Set INVITE_BASE_URL in .env.local to your public URL (for example: https://your-domain.com), then create a new invite.' : null)
+        } else {
+          setInviteSentMessage('Invite email sent successfully!')
+          setManualInviteLink(null)
+          setInviteLinkLocalhostWarning(null)
+        }
         setShowForm(false)
-        setNewUser({ name: '', email: '', role: 'content_manager' })
+        setNewUser({ name: '', email: '', role: roles[0]?.name ?? 'content_manager' })
         router.refresh()
-        setTimeout(() => setInviteSentMessage(null), 3000)
+        setTimeout(() => {
+          setInviteSentMessage(null)
+          setManualInviteLink(null)
+          setInviteLinkLocalhostWarning(null)
+        }, 12000)
       } else {
         setInviteError((result as any)?.error ?? 'Operation failed.')
+      }
+    })
+  }
+
+  const togglePermission = (permissionName: string) => {
+    setNewRole((prev) => ({
+      ...prev,
+      permissions: prev.permissions.includes(permissionName)
+        ? prev.permissions.filter((p) => p !== permissionName)
+        : [...prev.permissions, permissionName],
+    }))
+  }
+
+  const handleCreateRole = () => {
+    setInviteError('')
+    startTransition(async () => {
+      const result = await createRoleWithPermissions(newRole)
+      if ((result as any)?.success) {
+        const created: RoleRow = {
+          id: newRole.name || String(Date.now()),
+          name: newRole.name.trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_'),
+          label: newRole.label.trim() || newRole.name.trim(),
+          permissions: newRole.permissions,
+        }
+        setRoles((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)))
+        setNewRole({ name: '', label: '', permissions: [] })
+        setShowRoleForm(false)
+        setInviteSentMessage('Role created successfully.')
+        setTimeout(() => setInviteSentMessage(null), 3000)
+      } else {
+        setInviteError((result as any)?.error ?? 'Could not create role.')
       }
     })
   }
@@ -69,10 +127,15 @@ export default function UsersDashClient({ initialUsers }: { initialUsers: any[] 
           title="User Management"
           desc={`${users.length} team members`}
           action={
-            <button onClick={() => setShowForm(true)}
-              className="flex items-center gap-2 bg-mint-600 hover:bg-mint-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition shadow-sm shadow-mint-500/20">
-            <Plus className="w-4 h-4" /> Invite User
-          </button>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setShowRoleForm(true)} className="flex items-center gap-2 bg-white border border-gray-200 hover:border-mint-300 text-gray-700 text-sm font-semibold px-4 py-2.5 rounded-xl transition">
+                <Plus className="w-4 h-4" /> New Role
+              </button>
+              <button onClick={() => setShowForm(true)}
+                className="flex items-center gap-2 bg-mint-600 hover:bg-mint-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition shadow-sm shadow-mint-500/20">
+                <Plus className="w-4 h-4" /> Invite User
+              </button>
+            </div>
         }
       />
 
@@ -82,9 +145,41 @@ export default function UsersDashClient({ initialUsers }: { initialUsers: any[] 
         </div>
       )}
 
+      {manualInviteLink && (
+        <div className="mb-4 bg-amber-50 text-amber-800 text-sm px-4 py-3 rounded-xl border border-amber-200">
+          <p className="font-semibold mb-2">Share this invite link manually:</p>
+          {inviteLinkLocalhostWarning && (
+            <p className="mb-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-2 py-1.5">
+              {inviteLinkLocalhostWarning}
+            </p>
+          )}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <input
+              value={manualInviteLink}
+              readOnly
+              className="w-full px-3 py-2 rounded-lg border border-amber-200 bg-white text-amber-900 text-xs"
+            />
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(manualInviteLink)
+                  setInviteSentMessage('Invite link copied to clipboard.')
+                } catch {
+                  setInviteError('Could not copy link automatically. Please copy it manually.')
+                }
+              }}
+              className="px-3 py-2 rounded-lg bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700 transition"
+            >
+              Copy Link
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Role Reference */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-        {ROLES.map((role) => (
+        {roles.map((role) => (
           <SectionCard key={role.id}>
             <div className="p-4 flex items-start gap-3">
               <RoleBadge role={role.name} />
@@ -118,7 +213,7 @@ export default function UsersDashClient({ initialUsers }: { initialUsers: any[] 
                 <td className="px-5 py-4">
                   <select value={role} onChange={(e) => handleRoleChange(u.id, e.target.value)}
                     className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 text-gray-700 focus:outline-none focus:ring-1 focus:ring-mint-400">
-                    {ROLES.map((r) => <option key={r.id} value={r.name}>{r.label}</option>)}
+                    {roles.map((r) => <option key={r.id} value={r.name}>{r.label}</option>)}
                   </select>
                 </td>
                 <td className="px-5 py-4 text-xs text-gray-400">
@@ -202,7 +297,7 @@ export default function UsersDashClient({ initialUsers }: { initialUsers: any[] 
               </FormField>
               <FormField label="Role" required>
                 <DashSelect value={newUser.role} onChange={(e) => setNewUser((f) => ({ ...f, role: e.target.value }))}>
-                  {ROLES.map((r) => <option key={r.id} value={r.name}>{r.label}</option>)}
+                  {roles.map((r) => <option key={r.id} value={r.name}>{r.label}</option>)}
                 </DashSelect>
               </FormField>
             </div>
@@ -211,6 +306,55 @@ export default function UsersDashClient({ initialUsers }: { initialUsers: any[] 
               <button onClick={() => setShowForm(false)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 transition">Cancel</button>
               <button onClick={handleInvite} disabled={isPending} className="flex-1 py-2.5 rounded-xl bg-mint-600 text-white text-sm font-semibold hover:bg-mint-700 disabled:opacity-60 transition">
                 {isPending ? 'Sending...' : 'Send Invite'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRoleForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-2xl w-full mx-4 border border-gray-100 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="font-bold text-gray-900 text-lg">Create Dynamic Role</h3>
+              <button onClick={() => setShowRoleForm(false)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-100 text-gray-500 hover:bg-gray-200 transition">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <FormField label="Role Key" required hint="lowercase + underscores, e.g. blog_editor">
+                <DashInput value={newRole.name} onChange={(e) => setNewRole((f) => ({ ...f, name: e.target.value }))} placeholder="blog_editor" />
+              </FormField>
+
+              <FormField label="Role Label" required hint="Human-friendly label shown in UI">
+                <DashInput value={newRole.label} onChange={(e) => setNewRole((f) => ({ ...f, label: e.target.value }))} placeholder="Blog Editor" />
+              </FormField>
+
+              <FormField label="Permissions" required>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {permissionCatalog.map((permission) => {
+                    const selected = newRole.permissions.includes(permission.name)
+                    return (
+                      <button
+                        key={permission.name}
+                        type="button"
+                        onClick={() => togglePermission(permission.name)}
+                        className={`text-left rounded-lg border px-3 py-2 text-sm transition ${selected ? 'border-mint-400 bg-mint-50 text-mint-800' : 'border-gray-200 text-gray-700 hover:bg-gray-50'}`}
+                      >
+                        <p className="font-medium">{permission.name}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{permission.label}</p>
+                      </button>
+                    )
+                  })}
+                </div>
+              </FormField>
+            </div>
+
+            <div className="flex gap-3 mt-5">
+              <button onClick={() => setShowRoleForm(false)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium hover:bg-gray-50 transition">Cancel</button>
+              <button onClick={handleCreateRole} disabled={isPending} className="flex-1 py-2.5 rounded-xl bg-mint-600 text-white text-sm font-semibold hover:bg-mint-700 disabled:opacity-60 transition">
+                {isPending ? 'Creating...' : 'Create Role'}
               </button>
             </div>
           </div>

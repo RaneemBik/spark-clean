@@ -3,9 +3,9 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Plus, Pencil, Trash2, Search, FileText } from 'lucide-react'
-import { deleteBlogPost } from '@/lib/supabase/actions'
-import { PageHeader, SectionCard, StatusBadge, ConfirmModal, EmptyState } from '@/components/dashboard/DashUI'
+import { Plus, Pencil, Trash2, Search, FileText, RotateCcw } from 'lucide-react'
+import { deleteBlogPost, restoreBlogPost } from '@/lib/supabase/actions'
+import { PageHeader, SectionCard, StatusBadge, ConfirmModal, EmptyState, Tabs } from '@/components/dashboard/DashUI'
 import { PermissionGuard } from '@/components/dashboard/PermissionGuard'
 import { useRouter, useSearchParams } from 'next/navigation'
 
@@ -15,12 +15,18 @@ export default function BlogDashClient({ initialPosts }: { initialPosts: any[] }
   const search = searchParams?.get('q') ?? ''
   const router = useRouter()
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [restoreId, setRestoreId] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [activeTab, setActiveTab] = useState<'active' | 'trash'>('active')
 
-  const filtered = posts.filter((p) =>
+  const filtered = posts.filter((p) => {
+    const inCurrentTab = activeTab === 'trash' ? p.is_trashed : !p.is_trashed
+    if (!inCurrentTab) return false
+    return (
     p.title.toLowerCase().includes(search.toLowerCase()) ||
     p.category?.toLowerCase().includes(search.toLowerCase())
-  )
+    )
+  })
 
   const handleDelete = () => {
     if (!deleteId) return
@@ -31,6 +37,18 @@ export default function BlogDashClient({ initialPosts }: { initialPosts: any[] }
         router.refresh()
       }
       setDeleteId(null)
+    })
+  }
+
+  const handleRestore = () => {
+    if (!restoreId) return
+    startTransition(async () => {
+      const result = await restoreBlogPost(restoreId)
+      if (result.success) {
+        setPosts((prev) => prev.map((p) => (p.id === restoreId ? { ...p, is_trashed: false, status: 'published' } : p)))
+        router.refresh()
+      }
+      setRestoreId(null)
     })
   }
 
@@ -48,7 +66,9 @@ export default function BlogDashClient({ initialPosts }: { initialPosts: any[] }
       />
       <SectionCard>
         <div className="p-4 border-b border-gray-50">
-          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 w-72">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <Tabs tabs={['Active', 'Trash']} active={activeTab === 'active' ? 'Active' : 'Trash'} onChange={(tab) => setActiveTab(tab === 'Trash' ? 'trash' : 'active')} />
+            <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 w-full sm:w-72">
             <Search className="w-4 h-4 text-gray-400" />
             <input value={search} onChange={(e) => {
                 const val = e.target.value
@@ -58,10 +78,11 @@ export default function BlogDashClient({ initialPosts }: { initialPosts: any[] }
                 router.replace(window.location.pathname + (params.toString() ? `?${params.toString()}` : ''))
               }}
               placeholder="Search posts..." className="bg-transparent text-sm text-gray-600 placeholder-gray-300 outline-none flex-1" />
+            </div>
           </div>
         </div>
         {filtered.length === 0
-          ? <EmptyState icon={<FileText className="w-6 h-6" />} title="No posts found" desc="Create your first blog post to get started." />
+          ? <EmptyState icon={<FileText className="w-6 h-6" />} title={activeTab === 'trash' ? 'Trash is empty' : 'No posts found'} desc={activeTab === 'trash' ? 'Deleted posts can be restored from here.' : 'Create your first blog post to get started.'} />
           : (
             <div className="divide-y divide-gray-50">
               {filtered.map((post) => (
@@ -78,21 +99,29 @@ export default function BlogDashClient({ initialPosts }: { initialPosts: any[] }
                     </div>
                   </div>
                   <StatusBadge status={post.status} />
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Link href={`/dashboard/blog/${post.id}`} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-mint-600 hover:bg-mint-50 transition">
-                      <Pencil className="w-4 h-4" />
-                    </Link>
-                    <button onClick={() => setDeleteId(post.id)} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition">
-                      <Trash2 className="w-4 h-4" />
+                  {activeTab === 'active' ? (
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Link href={`/dashboard/blog/${post.id}`} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-mint-600 hover:bg-mint-50 transition">
+                        <Pencil className="w-4 h-4" />
+                      </Link>
+                      <button onClick={() => setDeleteId(post.id)} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setRestoreId(post.id)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition">
+                      <RotateCcw className="w-3.5 h-3.5" /> Restore
                     </button>
-                  </div>
+                  )}
                 </div>
               ))}
             </div>
           )}
       </SectionCard>
-      <ConfirmModal open={!!deleteId} title="Delete Blog Post?" desc="This cannot be undone."
+      <ConfirmModal open={!!deleteId} title="Move Blog Post to Trash?" desc="You can restore it later from Trash."
         onConfirm={handleDelete} onCancel={() => setDeleteId(null)} />
+      <ConfirmModal open={!!restoreId} title="Restore Blog Post?" desc="This post will appear on public pages again."
+        onConfirm={handleRestore} onCancel={() => setRestoreId(null)} confirmLabel="Restore" />
     </div>
     </PermissionGuard>
   )
