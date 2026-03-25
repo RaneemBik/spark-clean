@@ -1,8 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { DashboardSidebar } from '@/components/dashboard/Sidebar'
-import { DashboardTopbar } from '@/components/dashboard/Topbar'
 import { AuthProvider } from '@/lib/dashboard/authContext'
+import DashboardShell from '@/components/dashboard/DashboardShell'
 
 export const metadata = { title: 'SparkClean Admin' }
 
@@ -50,13 +49,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <AuthProvider initialUser={authUser}>
-      <div className="min-h-screen bg-gray-50/50 flex">
-        <DashboardSidebar />
-        <div className="flex-1 ml-64 flex flex-col min-h-screen">
-          <DashboardTopbar />
-          <main className="flex-1 p-6 max-w-screen-xl">{children}</main>
-        </div>
-      </div>
+      <DashboardShell>{children}</DashboardShell>
     </AuthProvider>
   )
 }

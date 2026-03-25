@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard, FileText, Newspaper, FolderKanban,
   Wrench, Home, Info, Mail, Users, Settings,
-  Droplets, LogOut, MessageSquare, ChevronRight,
+  Droplets, LogOut, MessageSquare, ChevronRight, X,
 } from 'lucide-react'
 import { useAuth } from '@/lib/dashboard/authContext'
 import { Permission } from '@/lib/dashboard/mockDashData'
@@ -52,7 +52,7 @@ const navGroups: { title: string; items: NavItem[] }[] = [
   },
 ]
 
-export function DashboardSidebar() {
+export function DashboardSidebar({ mobileOpen = false, onClose }: { mobileOpen?: boolean; onClose?: () => void }) {
   const pathname = usePathname()
   const { user, logout, hasPermission } = useAuth()
 
@@ -60,18 +60,33 @@ export function DashboardSidebar() {
     href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(href)
 
   return (
-    <aside className="w-64 h-screen bg-white border-r border-gray-100 flex flex-col fixed left-0 top-0 z-40 shadow-sm overflow-hidden">
+    <>
+      <div
+        className={`fixed inset-0 bg-black/30 backdrop-blur-[1px] z-40 transition-opacity lg:hidden ${mobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+        onClick={onClose}
+      />
+      <aside className={`w-64 h-screen bg-white border-r border-gray-100 flex flex-col fixed left-0 top-0 z-50 shadow-sm overflow-hidden transform transition-transform duration-200 ease-out lg:translate-x-0 lg:z-40 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
       {/* Logo */}
       <div className="px-5 py-5 border-b border-gray-100">
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-mint-400 to-teal-500 flex items-center justify-center shadow-md shadow-mint-500/20 group-hover:scale-105 transition-transform">
-            <Droplets className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <div className="font-bold text-gray-900 text-sm leading-tight">SparkClean</div>
-            <div className="text-[10px] text-gray-400 uppercase tracking-widest">Admin Panel</div>
-          </div>
-        </Link>
+        <div className="flex items-center justify-between gap-3">
+          <Link href="/" className="flex items-center gap-2.5 group" onClick={onClose}>
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-mint-400 to-teal-500 flex items-center justify-center shadow-md shadow-mint-500/20 group-hover:scale-105 transition-transform">
+              <Droplets className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <div className="font-bold text-gray-900 text-sm leading-tight">SparkClean</div>
+              <div className="text-[10px] text-gray-400 uppercase tracking-widest">Admin Panel</div>
+            </div>
+          </Link>
+          <button
+            type="button"
+            aria-label="Close sidebar"
+            onClick={onClose}
+            className="lg:hidden w-8 h-8 inline-flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* Nav */}
@@ -91,6 +106,7 @@ export function DashboardSidebar() {
                     <li key={item.href}>
                       <Link
                         href={item.href}
+                        onClick={onClose}
                         className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group ${
                           active
                             ? 'bg-mint-50 text-mint-700 shadow-sm shadow-mint-100'
@@ -124,13 +140,17 @@ export function DashboardSidebar() {
           </div>
         </div>
         <button
-          onClick={logout}
+          onClick={() => {
+            onClose?.()
+            logout()
+          }}
           className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-gray-400 hover:text-red-500 hover:bg-red-50 text-sm transition-colors"
         >
           <LogOut className="w-4 h-4" />
           <span className="text-xs font-medium">Sign Out</span>
         </button>
       </div>
-    </aside>
+      </aside>
+    </>
   )
 }

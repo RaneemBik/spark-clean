@@ -1,6 +1,6 @@
 'use client'
 
-import { Bell, Search, ExternalLink } from 'lucide-react'
+import { Bell, Search, ExternalLink, Menu } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/lib/dashboard/authContext'
@@ -22,7 +22,7 @@ const breadcrumbs: Record<string, string[]> = {
   '/dashboard/settings':    ['Dashboard', 'Settings'],
 }
 
-export function DashboardTopbar() {
+export function DashboardTopbar({ onMenuToggle }: { onMenuToggle?: () => void }) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const query = searchParams?.get('q') ?? ''
@@ -130,13 +130,22 @@ export function DashboardTopbar() {
   }, [])
 
   return (
-    <header className="h-16 bg-white border-b border-gray-100 flex items-center gap-4 px-6 sticky top-0 z-30">
+    <header className="h-16 bg-white border-b border-gray-100 flex items-center gap-2 sm:gap-4 px-3 sm:px-4 lg:px-6 sticky top-0 z-30">
+      <button
+        type="button"
+        onClick={onMenuToggle}
+        aria-label="Open sidebar"
+        className="lg:hidden w-9 h-9 inline-flex items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:border-mint-200 hover:text-mint-600 transition"
+      >
+        <Menu className="w-4 h-4" />
+      </button>
+
       {/* Breadcrumb */}
-      <div className="flex-1 flex items-center gap-2 text-sm">
+      <div className="flex-1 flex items-center gap-2 text-sm min-w-0 overflow-hidden">
         {crumbs.map((crumb, i) => (
-          <span key={i} className="flex items-center gap-2">
+          <span key={i} className={`flex items-center gap-2 ${i < crumbs.length - 1 ? 'hidden sm:flex' : 'flex'}`}>
             {i > 0 && <span className="text-gray-300">/</span>}
-            <span className={i === crumbs.length - 1 ? 'font-semibold text-gray-900' : 'text-gray-400'}>
+            <span className={`truncate ${i === crumbs.length - 1 ? 'font-semibold text-gray-900' : 'text-gray-400'}`}>
               {crumb}
             </span>
           </span>
@@ -146,7 +155,7 @@ export function DashboardTopbar() {
 
 
       {/* View Site */}
-      <Link href="/" target="_blank" className="hidden sm:flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-mint-600 transition px-3 py-2 rounded-xl hover:bg-mint-50 border border-transparent hover:border-mint-100">
+      <Link href="/" target="_blank" className="hidden md:flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-mint-600 transition px-3 py-2 rounded-xl hover:bg-mint-50 border border-transparent hover:border-mint-100">
         <ExternalLink className="w-3.5 h-3.5" /> View Site
       </Link>
 
@@ -198,7 +207,7 @@ export function DashboardTopbar() {
       )}
 
       {/* User chip */}
-      <div className="flex items-center gap-2.5 pl-3 border-l border-gray-100">
+      <div className="flex items-center gap-2 pl-2 sm:pl-3 border-l border-gray-100">
         <div className="w-8 h-8 rounded-full bg-mint-100 flex items-center justify-center text-mint-700 font-bold text-xs">
           {user?.avatar}
         </div>

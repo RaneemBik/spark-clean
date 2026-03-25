@@ -109,9 +109,9 @@ export function EmptyState({ icon, title, desc }: { icon: ReactNode; title: stri
 // ─── Page Header ─────────────────────────────────────────────────────────────
 export function PageHeader({ title, desc, action }: { title: string; desc?: string; action?: ReactNode }) {
   return (
-    <div className="flex items-start justify-between mb-6">
-      <div>
-        <h1 className="text-xl font-bold text-gray-900">{title}</h1>
+    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-6">
+      <div className="min-w-0">
+        <h1 className="text-lg sm:text-xl font-bold text-gray-900 break-words">{title}</h1>
         {desc && <p className="text-sm text-gray-400 mt-0.5">{desc}</p>}
       </div>
       {action}
@@ -230,10 +230,10 @@ export function SaveButton({ saved, onClick, label = 'Save Changes' }: { saved: 
 // ─── Tabs ─────────────────────────────────────────────────────────────────────
 export function Tabs({ tabs, active, onChange }: { tabs: string[]; active: string; onChange: (t: string) => void }) {
   return (
-    <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
+    <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit max-w-full overflow-x-auto">
       {tabs.map((t) => (
         <button key={t} onClick={() => onChange(t)}
-          className={`px-4 py-1.5 rounded-lg text-sm font-medium transition ${active === t ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
+          className={`px-4 py-1.5 rounded-lg text-sm font-medium transition whitespace-nowrap ${active === t ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
           {t}
         </button>
       ))}

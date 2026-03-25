@@ -16,12 +16,12 @@ export default function DashboardOverviewClient({
   return (
     <div className="space-y-6">
       {/* Welcome Banner */}
-      <div className="relative bg-white rounded-2xl border border-gray-100 overflow-hidden p-6">
+      <div className="relative bg-white rounded-2xl border border-gray-100 overflow-hidden p-4 sm:p-6">
         <div className="absolute right-0 top-0 w-64 h-full opacity-5 pointer-events-none">
           <div className="absolute -right-10 -top-10 w-56 h-56 bg-mint-500 rounded-full" />
           <div className="absolute right-10 bottom-0 w-32 h-32 bg-teal-400 rounded-full" />
         </div>
-        <div className="relative flex items-center justify-between">
+        <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <p className="text-gray-400 text-sm">Welcome back 👋</p>
             <h2 className="text-xl font-bold text-gray-900 mt-0.5">{user?.name}</h2>
@@ -37,7 +37,7 @@ export default function DashboardOverviewClient({
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <StatCard title="New Contact Forms"    value={stats.newContacts}   icon={<Mail className="w-4 h-4" />}         accent="text-mint-600 bg-mint-50" />
         <StatCard title="New Project Leads"    value={stats.newLeads}      icon={<MessageSquare className="w-4 h-4" />} accent="text-purple-600 bg-purple-50" />
         <StatCard title="Published Blog Posts" value={stats.totalBlogs}    icon={<FileText className="w-4 h-4" />}      accent="text-amber-600 bg-amber-50" />
@@ -80,7 +80,7 @@ export default function DashboardOverviewClient({
 
         {/* Quick Actions */}
         <SectionCard title="Quick Actions">
-          <div className="grid grid-cols-2 gap-3 p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4">
             {([
               { label: 'New Blog',     href: '/dashboard/blog/new',      icon: <FileText className="w-5 h-5" />,       color: 'bg-blue-50 text-blue-600 hover:bg-blue-100',     perm: 'edit_blog'                    },
               { label: 'New Project',  href: '/dashboard/projects/new',   icon: <FolderKanban className="w-5 h-5" />,   color: 'bg-green-50 text-green-600 hover:bg-green-100',  perm: 'edit_projects'                },

@@ -39,7 +39,7 @@ export default function AppointmentsClient({ initialAppointments }: { initialApp
   const todayKey = formatDateKey(new Date())
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       <h1 className="text-2xl font-bold mb-4">Appointments</h1>
 
       <div className="mb-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -146,9 +146,9 @@ export default function AppointmentsClient({ initialAppointments }: { initialApp
         {appointments.length === 0 && <div>No appointments yet</div>}
         {paginatedAppointments.map((a: any) => (
           <div key={a.id} className="p-4 border rounded bg-white">
-            <div className="flex justify-between">
-              <div>
-                <div className="font-semibold">{a.name} — {a.email}</div>
+            <div className="flex flex-col md:flex-row md:justify-between gap-4">
+              <div className="min-w-0">
+                <div className="font-semibold break-words">{a.name} — {a.email}</div>
                 {a.phone && <div className="text-sm text-gray-700">Phone: {a.phone}</div>}
                 <div className="text-sm text-gray-600">{a.location}</div>
                 <div className="text-sm mt-1">{new Date(a.appointment_start).toLocaleString()} — {new Date(a.appointment_end).toLocaleString()}</div>
@@ -182,7 +182,7 @@ export default function AppointmentsClient({ initialAppointments }: { initialApp
                   )}
                 </div>
               </div>
-              <div className="text-right">
+              <div className="text-left md:text-right shrink-0">
                 <div className="text-sm">Status: {a.status}</div>
                 <Link href={`/dashboard/appointments/${a.id}`} className="text-mint-600 text-sm">Edit</Link>
               </div>
