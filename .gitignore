@@ -21,3 +21,8 @@ out
 supabase-migrations/
 supabase/migrations/
 migrations/
+
+# Local docs/schema you do not want in GitHub
+FIX_SUMMARY.md
+supabase-schema.sql
+supabase-update-dynamic-roles-trash.sql
