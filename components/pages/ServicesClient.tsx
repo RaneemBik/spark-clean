@@ -2,7 +2,6 @@
 
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import Image from 'next/image'
 import { CheckCircle2, ArrowRight } from 'lucide-react'
 import { SectionHeading } from '@/components/shared/SectionHeading'
 import { CTASection } from '@/components/shared/CTASection'
@@ -10,6 +9,19 @@ import { Button } from '@/components/ui/Button'
 import { useState } from 'react'
 import Pagination from '@/components/ui/Pagination'
 import AppointmentModal from '@/components/ui/AppointmentModal'
+import MediaCarousel from '@/components/shared/MediaCarousel'
+
+function normalizeGallery(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map((v) => String(v).trim()).filter(Boolean)
+  if (typeof value !== 'string') return []
+  const raw = value.trim()
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) return parsed.map((v) => String(v).trim()).filter(Boolean)
+  } catch {}
+  return raw.split(/\r?\n|,/).map((v) => v.trim()).filter(Boolean)
+}
 
 const IMAGES = [
   'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&q=80&w=800',
@@ -48,6 +60,12 @@ export default function ServicesClient({ services }: { services: any[] }) {
                 const features: string[] = Array.isArray(service?.features)
                   ? service.features.filter((feature: unknown): feature is string => typeof feature === 'string')
                   : []
+                const serviceGallery = [
+                  ...normalizeGallery(service?.gallery),
+                  IMAGES[globalIndex % IMAGES.length],
+                  IMAGES[(globalIndex + 1) % IMAGES.length],
+                  IMAGES[(globalIndex + 2) % IMAGES.length],
+                ].filter((img: unknown): img is string => typeof img === 'string' && img.length > 0)
                 return (
               <motion.div key={service.id} id={service.id}
                 initial={{ opacity:0, y:30 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true, margin:'-100px' }}
@@ -55,9 +73,7 @@ export default function ServicesClient({ services }: { services: any[] }) {
                 <div className="w-full lg:w-1/2">
                   <div className="relative">
                     <div className="absolute inset-0 bg-mint-100 rounded-3xl translate-x-4 translate-y-4 -z-10" />
-                    <div className="relative h-[400px] rounded-3xl overflow-hidden shadow-lg">
-                      <Image src={IMAGES[globalIndex % IMAGES.length]} alt={service.title} fill className="object-cover" />
-                    </div>
+                    <MediaCarousel images={serviceGallery} altBase={service.title} className="h-[400px] rounded-3xl shadow-lg" showThumbs />
                   </div>
                 </div>
                 <div className="w-full lg:w-1/2">

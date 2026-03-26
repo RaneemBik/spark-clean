@@ -14,6 +14,32 @@ function slugify(text: string) {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 }
 
+function formatMissingGalleryColumnError(tableName: 'services' | 'blog_posts' | 'news_items') {
+  return `Gallery cannot be saved because ${tableName}.gallery does not exist in your database. Run this SQL in Supabase SQL Editor: ALTER TABLE public.services ADD COLUMN IF NOT EXISTS gallery jsonb NOT NULL DEFAULT '[]'::jsonb; ALTER TABLE public.blog_posts ADD COLUMN IF NOT EXISTS gallery jsonb NOT NULL DEFAULT '[]'::jsonb; ALTER TABLE public.news_items ADD COLUMN IF NOT EXISTS gallery jsonb NOT NULL DEFAULT '[]'::jsonb;`
+}
+
+function normalizeGalleryInput(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.map((v) => String(v).trim()).filter(Boolean)
+  }
+  if (typeof value !== 'string') return []
+
+  const raw = value.trim()
+  if (!raw) return []
+
+  try {
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) {
+      return parsed.map((v) => String(v).trim()).filter(Boolean)
+    }
+  } catch {}
+
+  return raw
+    .split(/\r?\n|,/)
+    .map((v) => v.trim())
+    .filter(Boolean)
+}
+
 const WORKING_HOUR_START = 8
 const WORKING_HOUR_END = 18
 const SLOT_MINUTES = 60
@@ -149,9 +175,18 @@ export async function updateService(id: string, data: Record<string, unknown>) {
     return { success: false, error: (e as Error).message }
   }
   const supabase = createClient()
+  const payload = { ...data }
+  if ('gallery' in payload) {
+    payload.gallery = normalizeGalleryInput(payload.gallery)
+  }
   const { error } = await supabase
-    .from('services').update({ ...data, updated_at: new Date().toISOString() }).eq('id', id)
-  if (error) return { success: false, error: error.message }
+    .from('services').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', id)
+  if (error) {
+    if (/column\s+"?gallery"?\s+of\s+relation\s+"?services"?\s+does\s+not\s+exist/i.test(error.message)) {
+      return { success: false, error: formatMissingGalleryColumnError('services') }
+    }
+    return { success: false, error: error.message }
+  }
   revalidatePath('/services')
   return { success: true }
 }
@@ -169,6 +204,9 @@ export async function upsertProject(data: Record<string, unknown>) {
 
   const payload = { ...data }
   delete payload.id
+  if ('gallery' in payload) {
+    payload.gallery = normalizeGalleryInput(payload.gallery)
+  }
 
   if (isNew) {
     payload.slug = slugify(data.title as string)
@@ -233,16 +271,29 @@ export async function upsertBlogPost(data: Record<string, unknown>) {
 
   const payload = { ...data }
   delete payload.id
+  if ('gallery' in payload) {
+    payload.gallery = normalizeGalleryInput(payload.gallery)
+  }
 
   if (isNew) {
     payload.slug = slugify(data.title as string)
     payload.published_at = new Date().toISOString()
     const { error } = await supabase.from('blog_posts').insert(payload)
-    if (error) return { success: false, error: error.message }
+    if (error) {
+      if (/column\s+"?gallery"?\s+of\s+relation\s+"?blog_posts"?\s+does\s+not\s+exist/i.test(error.message)) {
+        return { success: false, error: formatMissingGalleryColumnError('blog_posts') }
+      }
+      return { success: false, error: error.message }
+    }
   } else {
     payload.updated_at = new Date().toISOString()
     const { error } = await supabase.from('blog_posts').update(payload).eq('id', id)
-    if (error) return { success: false, error: error.message }
+    if (error) {
+      if (/column\s+"?gallery"?\s+of\s+relation\s+"?blog_posts"?\s+does\s+not\s+exist/i.test(error.message)) {
+        return { success: false, error: formatMissingGalleryColumnError('blog_posts') }
+      }
+      return { success: false, error: error.message }
+    }
   }
 
   revalidatePath('/blog')
@@ -302,11 +353,21 @@ export async function upsertNewsItem(data: Record<string, unknown>) {
     payload.slug = slugify(data.title as string)
     payload.published_at = new Date().toISOString()
     const { error } = await supabase.from('news_items').insert(payload)
-    if (error) return { success: false, error: error.message }
+    if (error) {
+      if (/column\s+"?gallery"?\s+of\s+relation\s+"?news_items"?\s+does\s+not\s+exist/i.test(error.message)) {
+        return { success: false, error: formatMissingGalleryColumnError('news_items') }
+      }
+      return { success: false, error: error.message }
+    }
   } else {
     payload.updated_at = new Date().toISOString()
     const { error } = await supabase.from('news_items').update(payload).eq('id', id)
-    if (error) return { success: false, error: error.message }
+    if (error) {
+      if (/column\s+"?gallery"?\s+of\s+relation\s+"?news_items"?\s+does\s+not\s+exist/i.test(error.message)) {
+        return { success: false, error: formatMissingGalleryColumnError('news_items') }
+      }
+      return { success: false, error: error.message }
+    }
   }
 
   revalidatePath('/news')

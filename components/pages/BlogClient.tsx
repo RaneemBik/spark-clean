@@ -2,13 +2,40 @@
 
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import Image from 'next/image'
 import { Calendar, User, ArrowRight } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { SectionHeading } from '@/components/shared/SectionHeading'
 import Pagination from '@/components/ui/Pagination'
+import MediaCarousel from '@/components/shared/MediaCarousel'
+
+function normalizeGallery(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map((v) => String(v).trim()).filter(Boolean)
+  if (typeof value !== 'string') return []
+  const raw = value.trim()
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) return parsed.map((v) => String(v).trim()).filter(Boolean)
+  } catch {}
+  return raw.split(/\r?\n|,/).map((v) => v.trim()).filter(Boolean)
+}
 
 export default function BlogClient({ posts }: { posts: any[] }) {
+  const fallbackGallery = [
+    'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=800',
+    'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=800',
+    'https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?auto=format&fit=crop&q=80&w=800',
+  ]
+
+  const getGallery = (post: any) => {
+    const images = [
+      ...normalizeGallery(post?.gallery),
+      typeof post?.image === 'string' ? post.image : '',
+      ...fallbackGallery,
+    ].filter((img: unknown): img is string => typeof img === 'string' && img.length > 0)
+    return Array.from(new Set(images)).slice(0, 3)
+  }
+
   const featured = posts[0]
   const rest = posts.slice(1)
 
@@ -40,7 +67,9 @@ export default function BlogClient({ posts }: { posts: any[] }) {
             <Link href={`/blog/${featured.slug}`}>
               <Card hover className="flex flex-col lg:flex-row overflow-hidden border-none shadow-xl">
                 <div className="lg:w-1/2 h-64 lg:h-auto relative">
-                  <Image src={featured.image} alt={featured.title} fill className="object-cover" />
+                  <div className="p-3 h-full">
+                    <MediaCarousel images={getGallery(featured)} altBase={featured.title} className="h-full min-h-[240px] rounded-xl" showThumbs={false} />
+                  </div>
                   <div className="absolute top-4 left-4 bg-mint-500 text-white px-3 py-1 rounded-full text-xs font-bold">Featured</div>
                 </div>
                 <div className="lg:w-1/2 p-8 lg:p-12 flex flex-col justify-center bg-white">
@@ -65,7 +94,9 @@ export default function BlogClient({ posts }: { posts: any[] }) {
                   <Link href={`/blog/${post.slug}`} className="block h-full">
                     <Card hover className="h-full flex flex-col">
                       <div className="h-48 relative overflow-hidden">
-                        <Image src={post.image} alt={post.title} fill className="object-cover transition-transform duration-500 hover:scale-110" />
+                        <div className="p-2">
+                          <MediaCarousel images={getGallery(post)} altBase={post.title} className="h-44 rounded-xl" showThumbs={false} />
+                        </div>
                       </div>
                       <div className="p-6 flex flex-col flex-grow">
                         <div className="text-mint-600 font-semibold text-xs mb-2">{post.category}</div>

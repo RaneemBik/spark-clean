@@ -4,15 +4,28 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Eye, Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
 import { updateService } from '@/lib/supabase/actions'
-import { PageHeader, SectionCard, FormField, DashInput, DashTextarea, Tabs } from '@/components/dashboard/DashUI'
+import { PageHeader, SectionCard, FormField, DashInput, DashTextarea, Tabs, ImageUploadField } from '@/components/dashboard/DashUI'
 import { PermissionGuard } from '@/components/dashboard/PermissionGuard'
 
+function normalizeGallery(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map((v) => String(v).trim()).filter(Boolean)
+  if (typeof value !== 'string') return []
+  const raw = value.trim()
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) return parsed.map((v) => String(v).trim()).filter(Boolean)
+  } catch {}
+  return raw.split(/\r?\n|,/).map((v) => v.trim()).filter(Boolean)
+}
+
 export default function ServicesDashClient({ initialServices }: { initialServices: any[] }) {
-  const [services, setServices] = useState(initialServices.map((s) => ({ ...s, expanded: false })))
+  const [services, setServices] = useState(initialServices.map((s) => ({ ...s, gallery: normalizeGallery(s.gallery), expanded: false })))
   const [saving, setSaving] = useState<string | null>(null)
   const [saved, setSaved] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [currentPage, setCurrentPage] = useState(1)
+  const [serviceTabs, setServiceTabs] = useState<Record<string, string>>({})
   const itemsPerPage = 5
 
   const totalPages = Math.ceil(services.length / itemsPerPage)
@@ -34,6 +47,19 @@ export default function ServicesDashClient({ initialServices }: { initialService
   const removeFeature = (id: string, i: number) =>
     setServices((prev) => prev.map((s) => s.id !== id ? s : { ...s, features: s.features.filter((_: any, j: number) => j !== i) }))
 
+  const updateGalleryItem = (id: string, i: number, value: string) =>
+    setServices((prev) => prev.map((s) => s.id === id
+      ? { ...s, gallery: (Array.isArray(s.gallery) ? s.gallery : []).map((img: string, idx: number) => idx === i ? value : img) }
+      : s))
+
+  const addGalleryItem = (id: string) =>
+    setServices((prev) => prev.map((s) => s.id === id ? { ...s, gallery: [...(Array.isArray(s.gallery) ? s.gallery : []), ''] } : s))
+
+  const removeGalleryItem = (id: string, i: number) =>
+    setServices((prev) => prev.map((s) => s.id === id
+      ? { ...s, gallery: (Array.isArray(s.gallery) ? s.gallery : []).filter((_: string, idx: number) => idx !== i) }
+      : s))
+
   const toggle = (id: string) =>
     setServices((prev) => prev.map((s) => s.id === id ? { ...s, expanded: !s.expanded } : s))
 
@@ -45,6 +71,7 @@ export default function ServicesDashClient({ initialServices }: { initialService
         description: service.description,
         price_note: service.price_note,
         features: service.features,
+        gallery: Array.isArray(service.gallery) ? service.gallery : [],
       })
       setSaving(null)
       setSaved(service.id)
@@ -79,7 +106,17 @@ export default function ServicesDashClient({ initialServices }: { initialService
 
             {service.expanded && (
               <div className="px-5 pb-5 space-y-4 border-t border-gray-50">
-                <div className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="pt-4">
+                  <Tabs
+                    tabs={['Details', 'Gallery Images']}
+                    active={serviceTabs[service.id] ?? 'Details'}
+                    onChange={(tab) => setServiceTabs((prev) => ({ ...prev, [service.id]: tab }))}
+                  />
+                </div>
+
+                {(serviceTabs[service.id] ?? 'Details') === 'Details' ? (
+                  <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField label="Service Title">
                     <DashInput value={service.title} onChange={(e) => update(service.id, 'title', e.target.value)} />
                   </FormField>
@@ -110,6 +147,31 @@ export default function ServicesDashClient({ initialServices }: { initialService
                     ))}
                   </div>
                 </div>
+                  </>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-medium text-gray-700">Gallery Images</p>
+                      <button onClick={() => addGalleryItem(service.id)} className="text-xs text-mint-600 hover:text-mint-700 flex items-center gap-1 font-medium">
+                        <Plus className="w-3 h-3" /> Add image
+                      </button>
+                    </div>
+                    {(Array.isArray(service.gallery) ? service.gallery : []).length === 0 && (
+                      <p className="text-sm text-gray-400">No gallery images yet. Add one to start the carousel.</p>
+                    )}
+                    {(Array.isArray(service.gallery) ? service.gallery : []).map((img: string, i: number) => (
+                      <div key={`${service.id}-gallery-${i}`} className="rounded-xl border border-gray-100 p-3 bg-gray-50/50">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Image {i + 1}</p>
+                          <button onClick={() => removeGalleryItem(service.id, i)} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <ImageUploadField value={img} onChange={(v) => updateGalleryItem(service.id, i, v)} />
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <div className="flex justify-end pt-2">
                   <button onClick={() => handleSave(service)} disabled={saving === service.id}
                     className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition ${saved === service.id ? 'bg-green-500 text-white' : 'bg-mint-600 hover:bg-mint-700 text-white'}`}>

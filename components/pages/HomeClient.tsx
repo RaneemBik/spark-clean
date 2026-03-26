@@ -2,7 +2,6 @@
 
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import Image from 'next/image'
 import { ArrowRight, CheckCircle2, Star, Shield, Clock, ThumbsUp, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -55,7 +54,7 @@ export default function HomeClient({ home, services, blogPosts }: Props) {
                 <div className="absolute inset-0 bg-gradient-to-tr from-mint-300 to-teal-400 rounded-[40%_60%_70%_30%/40%_50%_60%_50%] animate-blob opacity-20" />
                 <div className="absolute inset-4 bg-gradient-to-tr from-mint-200 to-teal-300 rounded-[60%_40%_30%_70%/50%_60%_40%_50%] animate-blob opacity-40" style={{ animationDelay:'2s' }} />
                 <div className="absolute inset-8 rounded-[50%_50%_50%_50%/60%_60%_40%_40%] overflow-hidden shadow-2xl border-4 border-white">
-                  <Image src={home?.hero_image ?? 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&q=80&w=800'} alt="Professional Cleaner" fill className="object-cover" />
+                  <img src={home?.hero_image ?? 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&q=80&w=800'} alt="Professional Cleaner" className="w-full h-full object-cover" />
                 </div>
                 <motion.div animate={{ y:[-10,10,-10] }} transition={{ duration:4, repeat:Infinity, ease:'easeInOut' }} className="absolute -right-4 top-20 glass-panel px-4 py-3 rounded-2xl flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600"><Shield className="w-5 h-5" /></div>
@@ -102,7 +101,7 @@ export default function HomeClient({ home, services, blogPosts }: Props) {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <motion.div initial={{ opacity:0, x:-30 }} whileInView={{ opacity:1, x:0 }} viewport={{ once:true }}>
               <div className="relative w-full h-[480px] rounded-3xl overflow-hidden shadow-2xl">
-                <Image src={home?.why_image ?? 'https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?auto=format&fit=crop&q=80&w=800'} alt="Why Spark Clean" fill className="object-cover" />
+                <img src={home?.why_image ?? 'https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?auto=format&fit=crop&q=80&w=800'} alt="Why Spark Clean" className="w-full h-full object-cover" />
               </div>
             </motion.div>
             <motion.div initial={{ opacity:0, x:30 }} whileInView={{ opacity:1, x:0 }} viewport={{ once:true }}>
@@ -131,7 +130,7 @@ export default function HomeClient({ home, services, blogPosts }: Props) {
                 <motion.div key={post.id} initial={{ opacity:0, y:20 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }} transition={{ delay:i*0.1 }}>
                   <Link href={`/blog/${post.slug}`}>
                     <Card hover className="h-full flex flex-col overflow-hidden">
-                      <div className="relative h-48"><Image src={post.image} alt={post.title} fill className="object-cover" /></div>
+                      <div className="h-48"><img src={post.image} alt={post.title} className="w-full h-full object-cover" /></div>
                       <div className="p-6 flex flex-col flex-grow">
                         <span className="text-mint-600 text-xs font-semibold mb-2">{post.category}</span>
                         <h3 className="font-bold text-gray-900 mb-2 flex-grow">{post.title}</h3>

@@ -1,13 +1,36 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { Calendar, User, ArrowLeft, Facebook, Twitter, Linkedin, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import MediaCarousel from '@/components/shared/MediaCarousel'
+
+function normalizeGallery(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map((v) => String(v).trim()).filter(Boolean)
+  if (typeof value !== 'string') return []
+  const raw = value.trim()
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) return parsed.map((v) => String(v).trim()).filter(Boolean)
+  } catch {}
+  return raw.split(/\r?\n|,/).map((v) => v.trim()).filter(Boolean)
+}
 
 export default function BlogDetailsClient({ post, related }: { post: any; related: any[] }) {
+  const fallbackGallery = [
+    'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=800',
+    'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=800',
+    'https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?auto=format&fit=crop&q=80&w=800',
+  ]
+  const gallery = Array.from(new Set([
+    ...normalizeGallery(post?.gallery),
+    typeof post?.image === 'string' ? post.image : '',
+    ...fallbackGallery,
+  ].filter((img: unknown): img is string => typeof img === 'string' && img.length > 0))).slice(0, 3)
+
   return (
     <div className="bg-white pb-20">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-24">
@@ -40,8 +63,8 @@ export default function BlogDetailsClient({ post, related }: { post: any; relate
       </div>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mb-12">
-        <motion.div initial={{ opacity:0, scale:0.95 }} animate={{ opacity:1, scale:1 }} transition={{ delay:0.2 }} className="relative w-full h-[400px] md:h-[500px] rounded-3xl overflow-hidden shadow-lg">
-          <Image src={post.image} alt={post.title} fill className="object-cover" priority />
+        <motion.div initial={{ opacity:0, scale:0.95 }} animate={{ opacity:1, scale:1 }} transition={{ delay:0.2 }}>
+          <MediaCarousel images={gallery} altBase={post.title} className="h-[400px] md:h-[500px] rounded-3xl shadow-lg" showThumbs />
         </motion.div>
       </div>
 
@@ -64,7 +87,7 @@ export default function BlogDetailsClient({ post, related }: { post: any; relate
             {related.map((r) => (
               <Link key={r.id} href={`/blog/${r.slug}`}>
                 <Card hover className="flex gap-4 p-4">
-                  <div className="relative w-24 h-20 rounded-xl overflow-hidden shrink-0"><Image src={r.image} alt={r.title} fill className="object-cover" /></div>
+                  <div className="w-24 h-20 rounded-xl overflow-hidden shrink-0"><img src={r.image} alt={r.title} className="w-full h-full object-cover" /></div>
                   <div>
                     <p className="text-xs text-mint-600 font-semibold mb-1">{r.category}</p>
                     <p className="font-semibold text-gray-800 text-sm line-clamp-2">{r.title}</p>

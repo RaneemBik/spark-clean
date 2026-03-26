@@ -1,174 +1,286 @@
-# SparkClean Next.js
+# SparkClean
 
-Production-ready marketing website + role-based admin dashboard for a cleaning business, built with Next.js 14 and Supabase.
-
-## Highlights
-
-- Public site pages: Home, About, Services, Projects, Blog, News, Contact
-- Admin dashboard for content management
-- Role-based access control (based on the admin needs)
-- Contact and project-interest submission workflows
-- Appointment booking support
-- Supabase authentication and PostgreSQL backend
+A full-stack informative cleaning-services website built with Next.js 14, React 18, Supabase, and PostgreSQL.
+It includes a public-facing website and a private admin dashboard with dynamic role-based access control.
 
 ## Tech Stack
 
-- Next.js 14 (App Router)
-- React 18
-- TypeScript
-- Tailwind CSS
-- Supabase (`@supabase/supabase-js`, `@supabase/ssr`)
+| Layer | Technology |
+| --- | --- |
+| Framework | Next.js 14.2.3 (App Router) |
+| Frontend | React 18, Tailwind CSS 3 |
+| Language | TypeScript 5 |
+| Database | PostgreSQL via Supabase |
+| Backend/Auth | Supabase Auth + Supabase Server Actions |
+| RBAC | Database-backed dynamic roles and permissions |
+| Deployment | Vercel (recommended) + Supabase |
 
 ## Project Structure
 
 ```text
-app/                 Next.js routes (public pages, auth, dashboard, API)
-components/          UI and feature components
-lib/                 Supabase clients, queries, actions, permissions
-scripts/             Utility scripts (seed user/data)
-supabase-schema.sql  Database schema + policies + starter records
+sparkclean-nextjs/
+|-- app/
+|   |-- (auth)/                 # Login route group
+|   |   |-- login/
+|   |-- (public)/               # Public website routes
+|   |   |-- page.tsx            # Home
+|   |   |-- about/
+|   |   |-- services/
+|   |   |-- projects/
+|   |   |-- blog/
+|   |   |-- news/
+|   |   |-- contact/
+|   |-- dashboard/              # Private admin dashboard
+|   |   |-- page.tsx            # Overview / stats
+|   |   |-- home/               # Home page editor
+|   |   |-- about/              # About page editor
+|   |   |-- services/           # Services editor
+|   |   |-- projects/           # Projects CRUD + trash/restore
+|   |   |-- blog/               # Blog CRUD + trash/restore
+|   |   |-- news/               # News CRUD + trash/restore
+|   |   |-- contact/            # Contact inbox
+|   |   |-- appointments/       # Appointments inbox
+|   |   |-- submissions/        # Project submissions inbox
+|   |   |-- users/              # User + role management
+|   |   |-- settings/
+|   |-- api/                    # API routes (auth, invitations, appointments)
+|-- components/
+|   |-- pages/                  # Public page clients
+|   |-- dashboard/              # Dashboard shell, sidebar, topbar, page clients
+|   |-- layout/                 # Navbar, footer
+|   |-- ui/                     # Shared UI primitives
+|-- lib/
+|   |-- supabase/               # Clients, server actions, queries
+|   |-- auth/                   # Permission checks + permission catalog
+|   |-- dashboard/              # Dashboard auth context and mock helpers
+|-- scripts/
+|   |-- seed.js                 # Idempotent local seed script
+|-- supabase-schema.sql         # Full schema, RLS, starter content
+|-- supabase-update-dynamic-roles-trash.sql  # Upgrade migration for existing DBs
+|-- middleware.ts               # Route protection
 ```
 
-## Prerequisites
+## Database Schema
+
+The schema is split across content, submissions, and access-control domains.
+
+### Content
+
+- `home_content`
+- `about_content`
+- `services`
+- `projects`
+- `blog_posts`
+- `news_items`
+
+### Submissions
+
+- `contact_submissions`
+- `project_submissions`
+- `appointments`
+
+### Access Control and Auth Profile Data
+
+- `profiles`
+- `users`
+- `permissions`
+- `roles`
+- `role_permissions`
+- `invitations`
+
+## Role-Based Access Control
+
+This project uses dynamic, database-backed RBAC.
+Roles and permission bundles are stored in tables, not hardcoded in UI-only logic.
+
+### How it works
+
+1. At login, user role and permissions are resolved from `roles` and `role_permissions`.
+2. Dashboard routes and actions call permission guards before access/update.
+3. Dashboard UI adapts based on the current permission set.
+4. Super admins can create custom roles and assign permissions from the Users page.
+
+### Built-in roles
+
+| Role | Access |
+| --- | --- |
+| super_admin | Full access including user and role management |
+| content_manager | Content editing (home/about/services/projects/blog/news) |
+| communications | Contact and appointment workflows |
+Super admin can add new roles with permissions in super admin dashboard.
+
+## Getting Started
+
+### Prerequisites
 
 - Node.js 18+
 - npm 9+
-- A Supabase project
+- A Supabase project (empty database is fine)
 
-## Quick Start
+### 1. Clone and install
 
 ```bash
+git clone <your-repository-url>
+cd sparkclean-nextjs
 npm install
+```
+
+### 2. Configure environment variables
+
+Create `.env.local` from `.env.example`.
+
+Mac/Linux:
+
+```bash
 cp .env.example .env.local
 ```
 
-Update `.env.local` with your Supabase credentials:
+Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env.local
+```
+
+Fill required values in `.env.local`:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
-- `NEXT_PUBLIC_BASE_URL` (usually `http://localhost:3000`)
+- `NEXT_PUBLIC_BASE_URL=http://localhost:3000`
+- `INVITE_BASE_URL=http://localhost:3000`
 
-Then start the app:
+For invite email testing, also set either SendGrid values or SMTP values.
 
-```bash
-npm run dev
-```
+### 3. Set up the database
 
-Open `http://localhost:3000`.
+In your Supabase SQL Editor, run:
 
-## Database Setup (Supabase)
+1. `supabase-schema.sql`
 
-1. Create a new Supabase project.
-2. Open the SQL Editor in Supabase.
-3. Run the full contents of `supabase-schema.sql`.
+If your database is old and already has earlier versions, then also run:
 
-This creates tables, RLS policies, triggers, and starter content for core public pages.
+2. `supabase-update-dynamic-roles-trash.sql`
 
-### Existing Database Upgrade
-
-If your Supabase project was created before dynamic roles/trash support, run:
-
-1. Open SQL Editor
-2. Execute `supabase-update-dynamic-roles-trash.sql`
-
-This enables:
-
-- Trash + restore for Blog, News, Projects
-- Dynamic role + permission tables
-- Updated public-read policies to exclude trashed content
-
-## Seed Data (Local Dev)
-
-This project includes a seed script so teammates can bootstrap test data quickly.
-
-### 1) Optional test-user env values
-
-Set these in `.env.local` to customize admin login creation:
-
-- `TEST_USER_EMAIL`
-- `TEST_USER_PASSWORD`
-- `TEST_USER_NAME`
-
-Defaults used by the script if not provided:
-
-- email: `test-admin@example.com`
-- password: `password123`
-- name: `Test Admin`
-
-### 2) Run seed script
+### 4. Seed data (required for first local run)
 
 ```bash
 npm run seed
 ```
 
-The script will:
+The seed script is idempotent and safe to run multiple times.
 
-- Ensure a test auth user exists (role: `super_admin`)
-- Insert sample rows into:
-  - `contact_submissions`
-  - `project_submissions`
-  - `appointments`
+It does all of the following:
+
+- ensures a test auth user exists
+- ensures user role rows in `users` and `profiles` are `super_admin`
+- ensures single-row website content exists (`home_content`, `about_content`)
+- seeds `services`, `projects`, `blog_posts`, and `news_items` if empty
+- seeds sample `contact_submissions`, `project_submissions`, and `appointments` if empty
+
+Default seeded admin credentials:
+
+- Email: `admin@example.com`
+- Password: `ChangeMe123!`
+
+You can override these via `.env.local`:
+
+- `TEST_USER_EMAIL`
+- `TEST_USER_PASSWORD`
+- `TEST_USER_NAME`
+
+### 5. Run the development server
+
+```bash
+npm run dev
+```
+
+Open http://localhost:3000.
+Dashboard is at http://localhost:3000/dashboard.
+
+## Instructor Quick Start (Empty Database)
+
+Use this exact checklist for your instructor:
+
+1. Create a new Supabase project.
+2. Clone this repository and run `npm install`.
+3. Copy `.env.example` to `.env.local` and fill Supabase keys.
+4. Run `supabase-schema.sql` in Supabase SQL Editor.
+5. Run `npm run seed`.
+6. Run `npm run dev`.
+7. Open `/dashboard` and sign in with seeded admin credentials.
+
+If she follows these 7 steps in order, she can run the project on her own laptop and database.
+
+## Environment Variables Reference
+
+| Variable | Required | Description |
+| --- | --- | --- |
+| NEXT_PUBLIC_SUPABASE_URL | Yes | Supabase project URL |
+| NEXT_PUBLIC_SUPABASE_ANON_KEY | Yes | Public anon key |
+| SUPABASE_SERVICE_ROLE_KEY | Yes | Service key used by server actions and seed |
+| NEXT_PUBLIC_BASE_URL | Yes | App URL for local links |
+| INVITE_BASE_URL | Recommended | Base URL for invite links |
+| SENDGRID_API_KEY | Optional | SendGrid API key |
+| SENDGRID_FROM | Optional | Sender email for SendGrid |
+| SMTP_HOST | Optional | SMTP host |
+| SMTP_PORT | Optional | SMTP port |
+| SMTP_USER | Optional | SMTP username |
+| SMTP_PASS | Optional | SMTP password |
+| SMTP_FROM | Optional | Sender email for SMTP |
+| ALLOW_INVITE_LINK_FALLBACK | Optional | Keep invite + show manual link if email fails |
+| TEST_USER_EMAIL | Optional | Seed admin email |
+| TEST_USER_PASSWORD | Optional | Seed admin password |
+| TEST_USER_NAME | Optional | Seed admin display name |
 
 ## Available Scripts
 
 ```bash
 npm run dev      # Start development server
 npm run build    # Build for production
-npm run start    # Run production server
+npm run start    # Start production server
 npm run lint     # Run ESLint
-npm run seed     # Create test user + seed sample data
+npm run seed     # Seed auth user + website data + sample submissions
 ```
 
-## Authentication and Roles
+## Dashboard Overview
 
-User profile + role data is managed in Supabase tables (`profiles`, `users`) and enforced in both:
+The dashboard is protected and permission-based.
 
-- server actions (authorization checks)
-- dashboard UI guards
+### Content management
 
-Recommended first account for local testing: `super_admin`.
+- Edit Home, About, and Services content
+- Create, update, trash, and restore Projects
+- Create, update, trash, and restore Blog posts
+- Create, update, trash, and restore News items
 
-### Dynamic Roles
+### Submissions
 
-Super admins can now create custom roles in Dashboard -> Users:
+- View and manage contact submissions
+- View and manage project interest submissions
+- View and manage appointments
 
-- Define role key and label
-- Assign granular permissions (blog/projects/news/etc.)
-- Assign that role to invited users
+### User and role management
 
-Access in dashboard/public management is permission-based, not hardcoded to fixed roles.
-
-## Deployment
-
-- Frontend: Vercel or any Node-compatible host
-- Backend/Auth/DB: Supabase
-
-Before deploying, ensure production environment variables are configured and never expose `SUPABASE_SERVICE_ROLE_KEY` to the client.
+- Invite users
+- Update user roles
+- Create custom roles with selected permissions
 
 ## Troubleshooting
 
-### App starts but dashboard data is empty
+### Seed fails with relation does not exist
 
-- Verify `supabase-schema.sql` was fully executed.
-- Check that seeded records exist in Supabase tables.
+Cause: schema was not applied.
+Fix: run `supabase-schema.sql`, then run `npm run seed` again.
 
-### Seed script fails with auth/db errors
+### Dashboard loads but content is missing
 
-- Confirm `.env.local` values are correct.
-- Ensure `SUPABASE_SERVICE_ROLE_KEY` belongs to the same project as `NEXT_PUBLIC_SUPABASE_URL`.
+Cause: empty tables or skipped seed.
+Fix: run `npm run seed` again.
 
-### Invite email fails (SMTP/Gmail daily limit)
+### Invite email fails (provider quota)
 
-- Set `ALLOW_INVITE_LINK_FALLBACK=true` in `.env.local`.
-- The dashboard will keep the invitation and show a manual invite link you can copy/share.
-- Set `INVITE_BASE_URL` to a public domain so the manual link works outside your machine.
-
-### Permission denied in dashboard actions
-
-- Confirm the signed-in user role in `profiles`/`users`.
-- Use a `super_admin` account to validate admin-only features.
+Set `ALLOW_INVITE_LINK_FALLBACK=true` and share manual invite link shown in dashboard.
 
 ## License
 
-Private project. Add a license section if you plan to open-source this repository.
+Private project.

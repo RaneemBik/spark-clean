@@ -2,13 +2,19 @@
 
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import Image from 'next/image'
 import { MapPin, Calendar, ArrowRight } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { CTASection } from '@/components/shared/CTASection'
 import Pagination from '@/components/ui/Pagination'
+import MediaCarousel from '@/components/shared/MediaCarousel'
 
 export default function ProjectsClient({ projects }: { projects: any[] }) {
+  const fallbackGallery = [
+    'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=800',
+    'https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?auto=format&fit=crop&q=80&w=800',
+    'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&q=80&w=800',
+  ]
+
   return (
     <div className="overflow-hidden bg-white">
       <section className="pt-24 pb-16 bg-mint-50">
@@ -33,8 +39,15 @@ export default function ProjectsClient({ projects }: { projects: any[] }) {
               <motion.div key={project.id} initial={{ opacity:0, y:20 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }} transition={{ delay:(globalIndex % 5) * 0.05 }}>
                 <Link href={`/projects/${project.slug}`} className="block h-full">
                   <Card hover className="h-full flex flex-col">
-                    <div className="relative h-64 overflow-hidden">
-                      <Image src={project.image} alt={project.title} fill className="object-cover transition-transform duration-500 hover:scale-110" />
+                    <div className="p-3 pb-0">
+                      <MediaCarousel
+                        images={(Array.isArray(project.gallery) ? project.gallery : [project.image, ...fallbackGallery])
+                          .filter((img: unknown): img is string => typeof img === 'string' && img.length > 0)
+                          .slice(0, 5)}
+                        altBase={project.title}
+                        className="h-64 rounded-xl"
+                        showThumbs={false}
+                      />
                       <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-mint-700">{project.category}</div>
                     </div>
                     <div className="p-6 flex flex-col flex-grow">

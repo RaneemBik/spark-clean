@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { MapPin, Calendar, Building, ArrowLeft, CheckCircle2, CheckCircle } from 'lucide-react'
 import { submitProjectInterest } from '@/lib/supabase/actions'
@@ -37,7 +36,7 @@ export default function ProjectDetailsClient({ project }: { project: any }) {
     <div className="bg-white">
       {/* Hero Banner */}
       <div className="relative h-[50vh] min-h-[400px] w-full">
-        <Image src={project.image} alt={project.title} fill className="object-cover" priority />
+        <img src={project.image} alt={project.title} className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gray-900/60" />
         <div className="absolute inset-0 flex items-center">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
@@ -76,8 +75,8 @@ export default function ProjectDetailsClient({ project }: { project: any }) {
                 <h2 className="text-3xl font-bold text-gray-900 mb-6">Gallery</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {gallery.map((img, i) => (
-                    <div key={i} className="relative h-64 rounded-2xl overflow-hidden shadow-sm">
-                      <Image src={img} alt={`Gallery ${i + 1}`} fill className="object-cover" />
+                    <div key={i} className="h-64 rounded-2xl overflow-hidden shadow-sm">
+                      <img src={img} alt={`Gallery ${i + 1}`} className="w-full h-full object-cover" />
                     </div>
                   ))}
                 </div>

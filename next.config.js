@@ -16,6 +16,7 @@ const nextConfig = {
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: 'i.pravatar.cc' },
       { protocol: 'https', hostname: 'nighrizkarscnojpjigs.supabase.co' },
+      { protocol: 'https', hostname: 'static.wixstatic.com' },
       // Allow testing domains used in development (add any others you need)
       { protocol: 'https', hostname: 'lala.com' },
     ],

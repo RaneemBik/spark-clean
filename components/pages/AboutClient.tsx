@@ -1,7 +1,6 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import Image from 'next/image'
 import * as Icons from 'lucide-react'
 import { SectionHeading } from '@/components/shared/SectionHeading'
 import { CTASection } from '@/components/shared/CTASection'
@@ -38,7 +37,7 @@ export default function AboutClient({ about }: { about: any }) {
             <motion.div initial={{ opacity:0, x:30 }} whileInView={{ opacity:1, x:0 }} viewport={{ once:true }} className="relative">
               <div className="absolute inset-0 bg-mint-200 rounded-3xl translate-x-4 translate-y-4" />
               <div className="relative rounded-3xl overflow-hidden shadow-lg h-[500px]">
-                <Image src={about?.story_image ?? 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=800'} alt="Our team" fill className="object-cover" />
+                <img src={about?.story_image ?? 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=800'} alt="Our team" className="w-full h-full object-cover" />
               </div>
             </motion.div>
           </div>

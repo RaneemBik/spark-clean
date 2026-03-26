@@ -2,11 +2,38 @@
 
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import Image from 'next/image'
 import { Calendar, ArrowRight, Megaphone } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
+import MediaCarousel from '@/components/shared/MediaCarousel'
+
+function normalizeGallery(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map((v) => String(v).trim()).filter(Boolean)
+  if (typeof value !== 'string') return []
+  const raw = value.trim()
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    if (Array.isArray(parsed)) return parsed.map((v) => String(v).trim()).filter(Boolean)
+  } catch {}
+  return raw.split(/\r?\n|,/).map((v) => v.trim()).filter(Boolean)
+}
 
 export default function NewsClient({ news }: { news: any[] }) {
+  const fallbackGallery = [
+    'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=800',
+    'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=800',
+    'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&q=80&w=800',
+  ]
+
+  const getGallery = (item: any) => {
+    const images = [
+      ...normalizeGallery(item?.gallery),
+      typeof item?.image === 'string' ? item.image : '',
+      ...fallbackGallery,
+    ].filter((img: unknown): img is string => typeof img === 'string' && img.length > 0)
+    return Array.from(new Set(images)).slice(0, 3)
+  }
+
   return (
     <div className="bg-white min-h-screen">
       <section className="pt-24 pb-16 bg-mint-50">
@@ -35,7 +62,9 @@ export default function NewsClient({ news }: { news: any[] }) {
                 <motion.div key={item.id} initial={{ opacity:0, y:20 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }} transition={{ delay:index*0.1 }}>
                   <Card hover className="flex flex-col md:flex-row overflow-hidden border border-gray-100">
                     <div className="md:w-2/5 h-64 md:h-auto relative">
-                      <Image src={item.image} alt={item.title} fill className="object-cover" />
+                      <div className="p-3 h-full">
+                        <MediaCarousel images={getGallery(item)} altBase={item.title} className="h-full min-h-[220px] rounded-xl" showThumbs={false} />
+                      </div>
                     </div>
                     <div className="md:w-3/5 p-8 flex flex-col justify-center bg-white">
                       <div className="flex items-center text-sm text-mint-600 font-semibold mb-3">
