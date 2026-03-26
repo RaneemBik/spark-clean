@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { Eye, EyeOff } from 'lucide-react'
 
 export default function SetPasswordClient({ token }: { token: string | null }) {
   const router = useRouter()
@@ -12,6 +13,8 @@ export default function SetPasswordClient({ token }: { token: string | null }) {
   const [inviteEmail, setInviteEmail] = useState<string | null>(null)
   const [inviteName, setInviteName] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
 
   if (!token) return <div className="p-6">Invalid or missing token.</div>
 
@@ -65,11 +68,21 @@ export default function SetPasswordClient({ token }: { token: string | null }) {
           {error && <div className="text-red-600 text-sm">{error}</div>}
           <div>
             <label className="text-sm">New password</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1 block w-full border rounded-lg px-3 py-2" />
+            <div className="relative mt-1">
+              <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} className="block w-full border rounded-lg px-3 py-2" />
+              <button type="button" onClick={() => setShowPassword((s) => !s)} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400" aria-label={showPassword ? 'Hide password' : 'Show password'}>
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
           </div>
           <div>
             <label className="text-sm">Confirm password</label>
-            <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} className="mt-1 block w-full border rounded-lg px-3 py-2" />
+            <div className="relative mt-1">
+              <input type={showConfirm ? 'text' : 'password'} value={confirm} onChange={(e) => setConfirm(e.target.value)} className="block w-full border rounded-lg px-3 py-2" />
+              <button type="button" onClick={() => setShowConfirm((s) => !s)} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400" aria-label={showConfirm ? 'Hide confirm password' : 'Show confirm password'}>
+                {showConfirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
           </div>
           <div className="flex gap-2">
             <button type="submit" className="bg-mint-600 text-white px-4 py-2 rounded-lg">Set password</button>

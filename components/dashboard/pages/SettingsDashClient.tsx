@@ -4,11 +4,12 @@ import { useState, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { PageHeader, SectionCard, FormField, DashInput, SaveButton, Tabs } from '@/components/dashboard/DashUI'
 import { useAuth } from '@/lib/dashboard/authContext'
+import { Eye, EyeOff } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 export default function SettingsDashClient({ user, profile }: { user: any; profile: any }) {
-  const { isSuperAdmin } = useAuth()
   const supabase = createClient()
-  const tabs = isSuperAdmin() ? ['My Profile', 'Password'] : ['My Profile', 'Password']
+  const tabs = ['My Profile', 'Password']
   const [tab, setTab] = useState('My Profile')
   const [isPending, startTransition] = useTransition()
   const [profileSaved, setProfileSaved] = useState(false)
@@ -20,6 +21,9 @@ export default function SettingsDashClient({ user, profile }: { user: any; profi
     email: user?.email ?? '',
   })
   const [pwForm, setPwForm] = useState({ newPw: '', confirmPw: '' })
+  const [showNew, setShowNew] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const router = useRouter()
 
   const handleProfileSave = () => {
     setError('')
@@ -38,9 +42,13 @@ export default function SettingsDashClient({ user, profile }: { user: any; profi
     startTransition(async () => {
       const { error } = await supabase.auth.updateUser({ password: pwForm.newPw })
       if (error) { setError(error.message); return }
+      // After changing password, sign out so the user can login with the new password
       setPwSaved(true)
       setPwForm({ newPw: '', confirmPw: '' })
-      setTimeout(() => setPwSaved(false), 1500)
+      try {
+        await supabase.auth.signOut()
+      } catch {}
+      router.push('/login')
     })
   }
 
@@ -73,8 +81,14 @@ export default function SettingsDashClient({ user, profile }: { user: any; profi
                 </FormField>
               </div>
               <div className="flex justify-end">
-                <div className="w-40">
-                  <SaveButton saved={profileSaved} onClick={handleProfileSave} label={isPending ? 'Saving...' : 'Update Profile'} />
+                <div className="flex gap-3">
+                  <div className="w-40">
+                    <SaveButton saved={profileSaved} onClick={handleProfileSave} label={isPending ? 'Saving...' : 'Update Profile'} />
+                  </div>
+                  <button type="button" onClick={() => setTab('Password')}
+                    className="px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 text-sm font-semibold hover:bg-gray-50 transition">
+                    Change Password
+                  </button>
                 </div>
               </div>
             </div>
@@ -85,10 +99,20 @@ export default function SettingsDashClient({ user, profile }: { user: any; profi
           <SectionCard title="Change Password">
             <div className="p-5 space-y-4 max-w-md">
               <FormField label="New Password" hint="Minimum 8 characters">
-                <DashInput type="password" value={pwForm.newPw} onChange={(e) => setPwForm((f) => ({ ...f, newPw: e.target.value }))} placeholder="Enter new password" />
+                <div className="relative">
+                  <DashInput type={showNew ? 'text' : 'password'} value={pwForm.newPw} onChange={(e) => setPwForm((f) => ({ ...f, newPw: e.target.value }))} placeholder="Enter new password" />
+                  <button type="button" onClick={() => setShowNew((s) => !s)} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400">
+                    {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </FormField>
               <FormField label="Confirm New Password">
-                <DashInput type="password" value={pwForm.confirmPw} onChange={(e) => setPwForm((f) => ({ ...f, confirmPw: e.target.value }))} placeholder="Repeat new password" />
+                <div className="relative">
+                  <DashInput type={showConfirm ? 'text' : 'password'} value={pwForm.confirmPw} onChange={(e) => setPwForm((f) => ({ ...f, confirmPw: e.target.value }))} placeholder="Repeat new password" />
+                  <button type="button" onClick={() => setShowConfirm((s) => !s)} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400">
+                    {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </FormField>
               <SaveButton saved={pwSaved} onClick={handlePasswordSave} label={isPending ? 'Updating...' : 'Update Password'} />
             </div>

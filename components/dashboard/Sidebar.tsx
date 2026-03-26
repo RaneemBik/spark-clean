@@ -43,13 +43,13 @@ const navGroups: { title: string; items: NavItem[] }[] = [
       { label: 'Appointments',   href: '/dashboard/appointments', icon: <LayoutDashboard className="w-4 h-4" />, permission: 'view_appointments' },
     ],
   },
-  {
-    title: 'System',
-    items: [
-      { label: 'Users',    href: '/dashboard/users',    icon: <Users className="w-4 h-4" />,    permission: 'manage_users'    },
-      { label: 'Settings', href: '/dashboard/settings', icon: <Settings className="w-4 h-4" />, permission: 'manage_settings' },
-    ],
-  },
+      {
+        title: 'System',
+        items: [
+          { label: 'Users',    href: '/dashboard/users',    icon: <Users className="w-4 h-4" />,    permission: 'manage_users'    },
+          { label: 'Settings', href: '/dashboard/settings', icon: <Settings className="w-4 h-4" /> },
+        ],
+      },
 ]
 
 export function DashboardSidebar({ mobileOpen = false, onClose }: { mobileOpen?: boolean; onClose?: () => void }) {
