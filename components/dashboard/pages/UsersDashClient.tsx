@@ -20,7 +20,7 @@ export default function UsersDashClient({
   initialRoles: RoleRow[]
   permissionCatalog: PermissionRow[]
 }) {
-  const { isSuperAdmin } = useAuth()
+  const { isSuperAdmin, hasPermission } = useAuth()
   const router = useRouter()
   const [users, setUsers] = useState(initialUsers)
   const [roles, setRoles] = useState(initialRoles)
@@ -39,14 +39,14 @@ export default function UsersDashClient({
   const totalPages = Math.ceil(users.length / itemsPerPage)
   const paginatedUsers = users.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
-  if (!isSuperAdmin()) {
+  if (!(isSuperAdmin() || hasPermission('manage_users'))) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
         <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center text-red-400 mb-4">
           <Users className="w-8 h-8" />
         </div>
         <h2 className="text-xl font-bold text-gray-800 mb-2">Access Restricted</h2>
-        <p className="text-gray-400 text-sm max-w-xs">Only Super Admins can manage users.</p>
+        <p className="text-gray-400 text-sm max-w-xs">Only Super Admins or users granted the <strong>manage_users</strong> permission can manage users.</p>
       </div>
     )
   }

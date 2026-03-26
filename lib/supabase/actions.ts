@@ -801,6 +801,13 @@ export async function inviteUser(email: string, name: string, role: string) {
     return { success: false, error: (e as Error).message }
   }
   const supabase = createServiceClient()
+  // Prevent inviting an email that already exists or already has a pending invite
+  try {
+    const exists = await emailAlreadyExists(supabase, email)
+    if (exists) return { success: false, error: 'A user or invitation with that email already exists.' }
+  } catch (e: any) {
+    // non-fatal: continue and let invite attempt run, but surface if it fails
+  }
   try {
     const { data, error } = await supabase.auth.admin.inviteUserByEmail(email, {
       data: { name, role },
@@ -826,6 +833,11 @@ export async function createInvitation(email: string, name: string, role: string
   }
 
   const supabase = createServiceClient()
+  // Prevent duplicate invitations or creating invite for existing user
+  try {
+    const exists = await emailAlreadyExists(supabase, email)
+    if (exists) return { success: false, error: 'A user or invitation with that email already exists.' }
+  } catch (e: any) {}
   try {
     const allowInviteLinkFallback =
       process.env.ALLOW_INVITE_LINK_FALLBACK === 'true' || process.env.NODE_ENV === 'development'
@@ -947,6 +959,44 @@ export async function getAllUsers() {
   }))
 }
 
+// Helper: check if an email already exists as a user or has a pending invitation
+async function emailAlreadyExists(supabase: ReturnType<typeof createServiceClient> | ReturnType<typeof createClient>, email: string) {
+  try {
+    // Check users mirror table
+    try {
+      const { data: userRow } = await (supabase as any).from('users').select('id,email').eq('email', email).limit(1).maybeSingle()
+      if (userRow) return true
+    } catch {}
+
+    // Check profiles (some installs store email here)
+    try {
+      const { data: profileRow } = await (supabase as any).from('profiles').select('id,email').eq('email', email).limit(1).maybeSingle()
+      if (profileRow) return true
+    } catch {}
+
+    // Check invitations table for an active invite
+    try {
+      const { data: invites } = await (supabase as any).from('invitations').select('id,expires_at').eq('email', email).limit(1)
+      if (invites && invites.length > 0) {
+        const inv = invites[0]
+        if (!inv.expires_at || new Date(inv.expires_at) > new Date()) return true
+      }
+    } catch {}
+
+    // Best-effort: query auth users list (may be limited), fall back quietly on error
+    try {
+      const { data } = await (supabase as any).auth.admin.listUsers()
+      if (data && data.users && Array.isArray(data.users)) {
+        if (data.users.some((u: any) => String(u.email || '').toLowerCase() === String(email).toLowerCase())) return true
+      }
+    } catch {}
+
+    return false
+  } catch {
+    return false
+  }
+}
+
 export async function createUser(email: string, name: string, role: string, password?: string) {
   try {
     await requirePermission('manage_users')
@@ -955,6 +1005,12 @@ export async function createUser(email: string, name: string, role: string, pass
   }
 
   const supabase = createServiceClient()
+
+  // Prevent creating a user when the email is already present in users/auth/invitations
+  try {
+    const exists = await emailAlreadyExists(supabase, email)
+    if (exists) return { success: false, error: 'A user or invitation with that email already exists.' }
+  } catch (e: any) {}
 
   // Use admin create when password provided, otherwise invite flow
   try {
