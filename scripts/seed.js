@@ -316,6 +316,64 @@ async function ensureTestUser() {
   }
 }
 
+async function ensureTestUsers(users) {
+  console.log('Ensuring multiple test users exist...');
+  for (const u of users) {
+    try {
+      const { data: existing } = await supabase
+        .from('users')
+        .select('id,email')
+        .eq('email', u.email)
+        .limit(1)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase.from('users').update({ role: u.role, name: u.name }).eq('id', existing.id);
+        await supabase.from('profiles').upsert({ id: existing.id, name: u.name, role: u.role });
+        console.log('User already present in users table:', existing.email);
+        continue;
+      }
+
+      const { data, error } = await supabase.auth.admin.createUser({
+        email: u.email,
+        password: u.password || testUserPassword,
+        email_confirm: true,
+        user_metadata: { name: u.name, role: u.role },
+      });
+
+      if (error) {
+        if (error.message && error.message.includes('already exists')) {
+          const { data: existingAfterAuth } = await supabase
+            .from('users')
+            .select('id,email')
+            .eq('email', u.email)
+            .limit(1)
+            .maybeSingle();
+
+          if (existingAfterAuth?.id) {
+            await supabase.from('users').update({ role: u.role, name: u.name }).eq('id', existingAfterAuth.id);
+            await supabase.from('profiles').upsert({ id: existingAfterAuth.id, name: u.name, role: u.role });
+            console.log('Auth user already existed; ensured role/profile rows are updated.');
+            continue;
+          }
+
+          console.log('Auth user already exists but users table row was not found.');
+          continue;
+        }
+        throw error;
+      }
+
+      if (data?.user?.id) {
+        await supabase.from('users').upsert({ id: data.user.id, email: data.user.email, name: u.name, role: u.role });
+        await supabase.from('profiles').upsert({ id: data.user.id, name: u.name, role: u.role });
+        console.log('Created auth user:', data.user.email);
+      }
+    } catch (err) {
+      console.error('Error creating test user', u.email, err?.message || err);
+    }
+  }
+}
+
 async function insertIfTableEmpty(tableName, row) {
   const { data: existing, error: readError } = await supabase
     .from(tableName)
@@ -478,7 +536,14 @@ async function seedContent() {
 }
 
 async function run() {
-  await ensureTestUser();
+  // Create a set of test users for instructor login across roles
+  const testUsers = [
+    { email: process.env.TEST_USER_EMAIL || 'admin@example.com', name: process.env.TEST_USER_NAME || 'Test Admin', role: 'super_admin' },
+    { email: process.env.EDITOR_USER_EMAIL || 'editor@example.com', name: 'Content Editor', role: 'content_manager' },
+    { email: process.env.COMMS_USER_EMAIL || 'comms@example.com', name: 'Communications', role: 'communications' },
+  ];
+
+  await ensureTestUsers(testUsers);
   await seedContent();
 }
 
