@@ -143,8 +143,8 @@ function mapMockNewsItems() {
 // ─── Home ─────────────────────────────────────────────────────────────────────
 export async function getHomeContent() {
   try {
-    const data = await withServiceFallback((supabase) =>
-      supabase.from('home_content').select('*').maybeSingle()
+    const data = await withServiceFallback(async (supabase) =>
+      await supabase.from('home_content').select('*').maybeSingle()
     )
     return data ?? FALLBACK_HOME
   } catch {
@@ -155,8 +155,8 @@ export async function getHomeContent() {
 // ─── About ────────────────────────────────────────────────────────────────────
 export async function getAboutContent() {
   try {
-    const data = await withServiceFallback((supabase) =>
-      supabase.from('about_content').select('*').maybeSingle()
+    const data = await withServiceFallback(async (supabase) =>
+      await supabase.from('about_content').select('*').maybeSingle()
     )
     return data ?? FALLBACK_ABOUT
   } catch {
@@ -167,8 +167,8 @@ export async function getAboutContent() {
 // ─── Services ─────────────────────────────────────────────────────────────────
 export async function getServices(): Promise<any[]> {
   try {
-    const data = await withServiceFallback((supabase) =>
-      supabase
+    const data = await withServiceFallback(async (supabase) =>
+      await supabase
         .from('services')
         .select('*')
         .eq('published', true)
@@ -184,8 +184,8 @@ export async function getServices(): Promise<any[]> {
 // ─── Projects ─────────────────────────────────────────────────────────────────
 export async function getProjects(): Promise<any[]> {
   try {
-    const data = await withServiceFallback((supabase) =>
-      supabase
+    const data = await withServiceFallback(async (supabase) =>
+      await supabase
         .from('projects')
         .select('*')
         .eq('published', true)
@@ -200,8 +200,8 @@ export async function getProjects(): Promise<any[]> {
 
 export async function getProjectBySlug(slug: string): Promise<any | null> {
   try {
-    const data = await withServiceFallback((supabase) =>
-      supabase
+    const data = await withServiceFallback(async (supabase) =>
+      await supabase
         .from('projects')
         .select('*')
         .eq('slug', slug)
@@ -218,8 +218,8 @@ export async function getProjectBySlug(slug: string): Promise<any | null> {
 // ─── Blog ─────────────────────────────────────────────────────────────────────
 export async function getBlogPosts(): Promise<any[]> {
   try {
-    const data = await withServiceFallback((supabase) =>
-      supabase
+    const data = await withServiceFallback(async (supabase) =>
+      await supabase
         .from('blog_posts')
         .select('*')
         .eq('status', 'published')
@@ -234,8 +234,8 @@ export async function getBlogPosts(): Promise<any[]> {
 
 export async function getBlogPostBySlug(slug: string): Promise<any | null> {
   try {
-    const data = await withServiceFallback((supabase) =>
-      supabase
+    const data = await withServiceFallback(async (supabase) =>
+      await supabase
         .from('blog_posts')
         .select('*')
         .eq('slug', slug)
@@ -252,8 +252,8 @@ export async function getBlogPostBySlug(slug: string): Promise<any | null> {
 // ─── News ─────────────────────────────────────────────────────────────────────
 export async function getNewsItems(): Promise<any[]> {
   try {
-    const data = await withServiceFallback((supabase) =>
-      supabase
+    const data = await withServiceFallback(async (supabase) =>
+      await supabase
         .from('news_items')
         .select('*')
         .eq('status', 'published')
@@ -268,8 +268,8 @@ export async function getNewsItems(): Promise<any[]> {
 
 export async function getNewsItemBySlug(slug: string): Promise<any | null> {
   try {
-    const data = await withServiceFallback((supabase) =>
-      supabase
+    const data = await withServiceFallback(async (supabase) =>
+      await supabase
         .from('news_items')
         .select('*')
         .eq('slug', slug)
