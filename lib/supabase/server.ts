@@ -1,12 +1,21 @@
+import 'server-only'
 import { createServerClient } from '@supabase/ssr'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 
+function requiredEnv(name: string): string {
+  const value = process.env[name]
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}`)
+  }
+  return value
+}
+
 export function createClient() {
   const cookieStore = cookies()
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    requiredEnv('NEXT_PUBLIC_SUPABASE_URL'),
+    requiredEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
     {
       cookies: {
         get(name: string) {
@@ -39,8 +48,8 @@ export function createServiceClient() {
   // Use a pure service-role client without user session cookies.
   // This guarantees RLS bypass for trusted server actions.
   return createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    requiredEnv('NEXT_PUBLIC_SUPABASE_URL'),
+    requiredEnv('SUPABASE_SERVICE_ROLE_KEY'),
     {
       auth: {
         persistSession: false,
